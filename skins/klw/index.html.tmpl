@@ -1,0 +1,666 @@
+## skin for klimalogg - Copyright 2015 Matthew Wall
+## $Id: index.html.tmpl 1123 2014-11-17 19:37:23Z mwall $
+#errorCatcher Echo
+#encoding UTF-8
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head profile="http://www.w3.org/2005/10/profile">
+    <!-- skin for klimalogg - Copyright 2015 Matthew Wall -->
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>$station.location</title>
+    <style>
+body {
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-size: 10pt;
+  background-color: $Extras.BG_COLOR;
+  color: $Extras.FG_COLOR;
+}
+h1 {
+  font-size: 110%;
+}
+h2 {
+  font-size: 100%;
+}
+a:link {
+  text-decoration: none;
+  color: $Extras.LINK_COLOR;
+}
+a:hover {
+  text-decoration: none;
+  color: $Extras.HOVER_COLOR;
+  background-color: $Extras.HOVER_BG_COLOR;
+}
+a:visited {
+  text-decoration: none;
+  color: $Extras.VISITED_COLOR;
+}
+
+#header {
+  clear: both;
+  margin: 0;
+  padding: 0;
+}
+
+#content {
+  clear: both;
+}
+
+#station_info {
+  float: left;
+  line-height: 95%;
+}
+.station_title {
+  font-size: 120%;
+  font-weight: bold;
+}
+.station_location {
+  font-size: 75%;
+}
+.station_time {
+  font-size: 75%;
+}
+
+.data_graphs {
+}
+.data_table {
+  float: right;
+}
+
+#footer {
+  padding-top: 50px;
+}
+#footer table {
+  font-size: 8pt;
+  font-style: italic;
+  color: #aaaaaa;
+}
+#footer td.label {
+  text-align: right;
+}
+
+.metrics_table {
+  font-size: 80%;
+}
+.metric_name {
+  text-align: right;
+}
+.metric_large {
+  text-align: left;
+  font-weight: bold;
+  font-size: 230%;
+  color: $Extras.LARGE_COLOR;
+}
+.metric_value {
+  text-align: left;
+  font-weight: bold;
+}
+.metric_units {
+  text-align: left;
+}
+.hilo_time {
+  text-align: left;
+  color: #aaaaaa;
+  font-size: 85%;
+}
+.heatindex {
+  color: $Extras.HEATINDEX_COLOR;
+}
+.heatindex {
+  color: $Extras.WINDCHILL_COLOR;
+}
+.table_heading {
+  font-size: 80%;
+  color: #888888;
+  border-bottom: 1px solid #cccccc;
+}
+
+.navigation {
+  float: right;
+}
+.period {
+  padding-left: 25px;
+  padding-right: 25px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  background-color: $Extras.BG_COLOR;
+  border: 1px solid $Extras.VISITED_COLOR;
+}
+.period_selected {
+  padding-left: 25px;
+  padding-right: 25px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  background-color: $Extras.HOVER_BG_COLOR;
+  border: 1px solid $Extras.VISITED_COLOR;
+}
+    </style>
+    <script>
+var periods = ['day','week','month','year'];
+function choose(id) {
+  for(var i=0; i<periods.length; i++) {
+    var c = document.getElementById('control_'+periods[i]);
+    if(c) c.className = (periods[i] == id) ? 'period_selected' : 'period';
+    var g = document.getElementById('graphs_'+periods[i]);
+    if(g) g.style.display = (periods[i] == id) ? 'block' : 'none';
+  }
+}
+    </script>
+  </head>
+  <body>
+    <div id='header'>
+      <div id='station_info'>
+        <span class='station_title'>$station.location</span><br/>
+        <span class='station_time'>$current.dateTime</span>
+      </div>
+      <div class='navigation'>
+        <a class='period_selected' id='control_day' onclick="choose('day')">Day</a>
+        <a class='period' id='control_week' onclick="choose('week')">Week</a>
+        <a class='period' id='control_month' onclick="choose('month')">Month</a>
+        <a class='period' id='control_year' onclick="choose('year')">Year</a>
+      </div>
+    </div>
+    <div id='content'>
+      <div class='data_table'>
+<!-- current readings in tabular form -->
+<table class='metrics_table'>
+  <tr>
+    <td></td>
+    <td class='table_heading' colspan="2">ACTUAL</td>
+    <td class='table_heading'>HI/LO</td>
+    <td></td>
+  </tr>
+  #if $day.inTemp.has_data
+  <tr style='vertical-align:top'>
+    <td class='metric_name'>Temperature KLP</td>
+    <td class='metric_large'>$current.inTemp.formatted</td>
+    <td class='metric_value'><span class='dewpoint'>$current.dewpoint.formatted</span><br/><span class='heatindex'>$current.heatindex.formatted</span></td>
+    <td class='metric_value'>
+      $day.inTemp.max.formatted<br/>
+      $day.inTemp.min.formatted</td>
+    <td class='metric_units'>$unit.label.inTemp</td>
+  </tr>
+  #end if
+  #if $day.inHumidity.has_data
+  <tr style='vertical-align:top'>
+    <td class='metric_name'>Humidity KLP</td>
+    <td class='metric_large' colspan='2' >$current.inHumidity.formatted</td>
+    <td class='metric_value'>
+      $day.inHumidity.max.formatted<br/>
+      $day.inHumidity.min.formatted</td>
+    <td class='metric_units'>$unit.label.inHumidity</td>
+  </tr>
+  #end if
+</table>
+<!-- hi/lo readings in tabular form -->
+<table class='metrics_table'>
+  <tr>
+    <td></td>
+    <td class="table_heading">TODAY</td>
+    <td class="table_heading">MONTH</td>
+    <td class="table_heading">YEAR</td>
+    <td></td>
+  </tr>
+  ##
+  ## wview-schema##
+  ##
+  #if $day.inTemp.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Temp KLP:</td>
+    <td><span class="metric_value">$day.inTemp.max.formatted</span><br/>
+      <span class="hilo_time">$day.inTemp.maxtime</span></td>
+    <td><span class="metric_value">$month.inTemp.max.formatted</span><br/>
+      <span class="hilo_time">$month.inTemp.maxtime</span></td>
+    <td><span class="metric_value">$year.inTemp.max.formatted</span><br/>
+      <span class="hilo_time">$year.inTemp.maxtime</span></td>
+    <td class="metric_units">$unit.label.inTemp</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Temp KLP:</td>
+    <td><span class="metric_value">$day.inTemp.min.formatted</span><br/>
+      <span class="hilo_time">$day.inTemp.mintime</span></td>
+    <td><span class="metric_value">$month.inTemp.min.formatted</span><br/>
+      <span class="hilo_time">$month.inTemp.mintime</span></td>
+    <td><span class="metric_value">$year.inTemp.min.formatted</span><br/>
+      <span class="hilo_time">$year.inTemp.mintime</span></td>
+    <td class="metric_units">$unit.label.inTemp</td>
+  </tr>
+  #end if
+  #if $day.outTemp.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Temp 1:</td>
+    <td><span class="metric_value">$day.outTemp.max.formatted</span><br/>
+      <span class="hilo_time">$day.outTemp.maxtime</span></td>
+    <td><span class="metric_value">$month.outTemp.max.formatted</span><br/>
+      <span class="hilo_time">$month.outTemp.maxtime</span></td>
+    <td><span class="metric_value">$year.outTemp.max.formatted</span><br/>
+      <span class="hilo_time">$year.outTemp.maxtime</span></td>
+    <td class="metric_units">$unit.label.outTemp</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Temp 1:</td>
+    <td><span class="metric_value">$day.outTemp.min.formatted</span><br/>
+      <span class="hilo_time">$day.outTemp.mintime</span></td>
+    <td><span class="metric_value">$month.outTemp.min.formatted</span><br/>
+      <span class="hilo_time">$month.outTemp.mintime</span></td>
+    <td><span class="metric_value">$year.outTemp.min.formatted</span><br/>
+      <span class="hilo_time">$year.outTemp.mintime</span></td>
+    <td class="metric_units">$unit.label.outTemp</td>
+  </tr>
+  #end if
+  #if $day.extraTemp1.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Temp 2:</td>
+    <td><span class="metric_value">$day.extraTemp1.max.formatted</span><br/>
+      <span class="hilo_time">$day.extraTemp1.maxtime</span></td>
+    <td><span class="metric_value">$month.extraTemp1.max.formatted</span><br/>
+      <span class="hilo_time">$month.extraTemp1.maxtime</span></td>
+    <td><span class="metric_value">$year.extraTemp1.max.formatted</span><br/>
+      <span class="hilo_time">$year.extraTemp1.maxtime</span></td>
+    <td class="metric_units">$unit.label.extraTemp1</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Temp 2:</td>
+    <td><span class="metric_value">$day.extraTemp1.min.formatted</span><br/>
+      <span class="hilo_time">$day.extraTemp1.mintime</span></td>
+    <td><span class="metric_value">$month.extraTemp1.min.formatted</span><br/>
+      <span class="hilo_time">$month.extraTemp1.mintime</span></td>
+    <td><span class="metric_value">$year.extraTemp1.min.formatted</span><br/>
+      <span class="hilo_time">$year.extraTemp1.mintime</span></td>
+    <td class="metric_units">$unit.label.extraTemp1</td>
+  </tr>
+  #end if
+  #if $day.extraTemp2.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Temp 3:</td>
+    <td><span class="metric_value">$day.extraTemp2.max.formatted</span><br/>
+      <span class="hilo_time">$day.extraTemp2.maxtime</span></td>
+    <td><span class="metric_value">$month.extraTemp2.max.formatted</span><br/>
+      <span class="hilo_time">$month.extraTemp2.maxtime</span></td>
+    <td><span class="metric_value">$year.extraTemp2.max.formatted</span><br/>
+      <span class="hilo_time">$year.extraTemp2.maxtime</span></td>
+    <td class="metric_units">$unit.label.extraTemp2</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Temp 3:</td>
+    <td><span class="metric_value">$day.extraTemp2.min.formatted</span><br/>
+      <span class="hilo_time">$day.extraTemp2.mintime</span></td>
+    <td><span class="metric_value">$month.extraTemp2.min.formatted</span><br/>
+      <span class="hilo_time">$month.extraTemp2.mintime</span></td>
+    <td><span class="metric_value">$year.extraTemp2.min.formatted</span><br/>
+      <span class="hilo_time">$year.extraTemp2.mintime</span></td>
+    <td class="metric_units">$unit.label.extraTemp2</td>
+  </tr>
+  #end if
+  #if $day.extraTemp3.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Temp 4:</td>
+    <td><span class="metric_value">$day.extraTemp3.max.formatted</span><br/>
+      <span class="hilo_time">$day.extraTemp3.maxtime</span></td>
+    <td><span class="metric_value">$month.extraTemp3.max.formatted</span><br/>
+      <span class="hilo_time">$month.extraTemp3.maxtime</span></td>
+    <td><span class="metric_value">$year.extraTemp3.max.formatted</span><br/>
+      <span class="hilo_time">$year.extraTemp3.maxtime</span></td>
+    <td class="metric_units">$unit.label.extraTemp3</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Temp 4:</td>
+    <td><span class="metric_value">$day.extraTemp3.min.formatted</span><br/>
+      <span class="hilo_time">$day.extraTemp3.mintime</span></td>
+    <td><span class="metric_value">$month.extraTemp3.min.formatted</span><br/>
+      <span class="hilo_time">$month.extraTemp3.mintime</span></td>
+    <td><span class="metric_value">$year.extraTemp3.min.formatted</span><br/>
+      <span class="hilo_time">$year.extraTemp3.mintime</span></td>
+    <td class="metric_units">$unit.label.extraTemp3</td>
+  </tr>
+  #end if
+  #if $day.soilTemp1.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Temp 5:</td>
+    <td><span class="metric_value">$day.soilTemp1.max.formatted</span><br/>
+      <span class="hilo_time">$day.soilTemp1.maxtime</span></td>
+    <td><span class="metric_value">$month.soilTemp1.max.formatted</span><br/>
+      <span class="hilo_time">$month.soilTemp1.maxtime</span></td>
+    <td><span class="metric_value">$year.soilTemp1.max.formatted</span><br/>
+      <span class="hilo_time">$year.soilTemp1.maxtime</span></td>
+    <td class="metric_units">$unit.label.soilTemp1</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Temp 5:</td>
+    <td><span class="metric_value">$day.soilTemp1.min.formatted</span><br/>
+      <span class="hilo_time">$day.soilTemp1.mintime</span></td>
+    <td><span class="metric_value">$month.soilTemp1.min.formatted</span><br/>
+      <span class="hilo_time">$month.soilTemp1.mintime</span></td>
+    <td><span class="metric_value">$year.soilTemp1.min.formatted</span><br/>
+      <span class="hilo_time">$year.soilTemp1.mintime</span></td>
+    <td class="metric_units">$unit.label.soilTemp1</td>
+  </tr>
+  #end if
+  #if $day.soilTemp2.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Temp 6:</td>
+    <td><span class="metric_value">$day.soilTemp2.max.formatted</span><br/>
+      <span class="hilo_time">$day.soilTemp2.maxtime</span></td>
+    <td><span class="metric_value">$month.soilTemp2.max.formatted</span><br/>
+      <span class="hilo_time">$month.soilTemp2.maxtime</span></td>
+    <td><span class="metric_value">$year.soilTemp2.max.formatted</span><br/>
+      <span class="hilo_time">$year.soilTemp2.maxtime</span></td>
+    <td class="metric_units">$unit.label.soilTemp2</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Temp 6:</td>
+    <td><span class="metric_value">$day.soilTemp2.min.formatted</span><br/>
+      <span class="hilo_time">$day.soilTemp2.mintime</span></td>
+    <td><span class="metric_value">$month.soilTemp2.min.formatted</span><br/>
+      <span class="hilo_time">$month.soilTemp2.mintime</span></td>
+    <td><span class="metric_value">$year.soilTemp2.min.formatted</span><br/>
+      <span class="hilo_time">$year.soilTemp2.mintime</span></td>
+    <td class="metric_units">$unit.label.soilTemp2</td>
+  </tr>
+  #end if
+  #if $day.soilTemp3.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Temp 7:</td>
+    <td><span class="metric_value">$day.soilTemp3.max.formatted</span><br/>
+      <span class="hilo_time">$day.soilTemp3.maxtime</span></td>
+    <td><span class="metric_value">$month.soilTemp3.max.formatted</span><br/>
+      <span class="hilo_time">$month.soilTemp3.maxtime</span></td>
+    <td><span class="metric_value">$year.soilTemp3.max.formatted</span><br/>
+      <span class="hilo_time">$year.soilTemp3.maxtime</span></td>
+    <td class="metric_units">$unit.label.soilTemp3</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Temp 7:</td>
+    <td><span class="metric_value">$day.soilTemp3.min.formatted</span><br/>
+      <span class="hilo_time">$day.soilTemp3.mintime</span></td>
+    <td><span class="metric_value">$month.soilTemp3.min.formatted</span><br/>
+      <span class="hilo_time">$month.soilTemp3.mintime</span></td>
+    <td><span class="metric_value">$year.soilTemp3.min.formatted</span><br/>
+      <span class="hilo_time">$year.soilTemp3.mintime</span></td>
+    <td class="metric_units">$unit.label.soilTemp3</td>
+  </tr>
+  #end if
+  #if $day.soilTemp4.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Temp 8:</td>
+    <td><span class="metric_value">$day.soilTemp4.max.formatted</span><br/>
+      <span class="hilo_time">$day.soilTemp4.maxtime</span></td>
+    <td><span class="metric_value">$month.soilTemp4.max.formatted</span><br/>
+      <span class="hilo_time">$month.soilTemp4.maxtime</span></td>
+    <td><span class="metric_value">$year.soilTemp4.max.formatted</span><br/>
+      <span class="hilo_time">$year.soilTemp4.maxtime</span></td>
+    <td class="metric_units">$unit.label.soilTemp4</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Temp 8:</td>
+    <td><span class="metric_value">$day.soilTemp4.min.formatted</span><br/>
+      <span class="hilo_time">$day.soilTemp4.mintime</span></td>
+    <td><span class="metric_value">$month.soilTemp4.min.formatted</span><br/>
+      <span class="hilo_time">$month.soilTemp4.mintime</span></td>
+    <td><span class="metric_value">$year.soilTemp4.min.formatted</span><br/>
+      <span class="hilo_time">$year.soilTemp4.mintime</span></td>
+    <td class="metric_units">$unit.label.soilTemp4</td>
+  </tr>
+  #end if
+  #if $day.inHumidity.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Humidity KLP:</td>
+    <td><span class="metric_value">$day.inHumidity.max.formatted</span><br/>
+      <span class="hilo_time">$day.inHumidity.maxtime</span></td>
+    <td><span class="metric_value">$month.inHumidity.max.formatted</span><br/>
+      <span class="hilo_time">$month.inHumidity.maxtime</span></td>
+    <td><span class="metric_value">$year.inHumidity.max.formatted</span><br/>
+      <span class="hilo_time">$year.inHumidity.maxtime</span></td>
+    <td class="metric_units">$unit.label.inHumidity</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Humidity KLP:</td>
+    <td><span class="metric_value">$day.inHumidity.min.formatted</span><br/>
+      <span class="hilo_time">$day.inHumidity.mintime</span></td>
+    <td><span class="metric_value">$month.inHumidity.min.formatted</span><br/>
+      <span class="hilo_time">$month.inHumidity.mintime</span></td>
+    <td><span class="metric_value">$year.inHumidity.min.formatted</span><br/>
+      <span class="hilo_time">$year.inHumidity.mintime</span></td>
+    <td class="metric_units">$unit.label.inHumidity</td>
+  </tr>
+  #end if
+  #if $day.outHumidity .has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Humidity 1:</td>
+    <td><span class="metric_value">$day.outHumidity.max.formatted</span><br/>
+      <span class="hilo_time">$day.outHumidity.maxtime</span></td>
+    <td><span class="metric_value">$month.outHumidity.max.formatted</span><br/>
+      <span class="hilo_time">$month.outHumidity.maxtime</span></td>
+    <td><span class="metric_value">$year.outHumidity.max.formatted</span><br/>
+      <span class="hilo_time">$year.outHumidity.maxtime</span></td>
+    <td class="metric_units">$unit.label.outHumidity</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Humidity 1:</td>
+    <td><span class="metric_value">$day.outHumidity.min.formatted</span><br/>
+      <span class="hilo_time">$day.outHumidity.mintime</span></td>
+    <td><span class="metric_value">$month.outHumidity.min.formatted</span><br/>
+      <span class="hilo_time">$month.outHumidity.mintime</span></td>
+    <td><span class="metric_value">$year.outHumidity.min.formatted</span><br/>
+      <span class="hilo_time">$year.outHumidity.mintime</span></td>
+    <td class="metric_units">$unit.label.outHumidity</td>
+  </tr>
+  #end if
+  #if $day.extraHumid1.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Humidity 2:</td>
+    <td><span class="metric_value">$day.extraHumid1.max.formatted</span><br/>
+      <span class="hilo_time">$day.extraHumid1.maxtime</span></td>
+    <td><span class="metric_value">$month.extraHumid1.max.formatted</span><br/>
+      <span class="hilo_time">$month.extraHumid1.maxtime</span></td>
+    <td><span class="metric_value">$year.extraHumid1.max.formatted</span><br/>
+      <span class="hilo_time">$year.extraHumid1.maxtime</span></td>
+    <td class="metric_units">$unit.label.extraHumid1</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Humidity 2:</td>
+    <td><span class="metric_value">$day.extraHumid1.min.formatted</span><br/>
+      <span class="hilo_time">$day.extraHumid1.mintime</span></td>
+    <td><span class="metric_value">$month.extraHumid1.min.formatted</span><br/>
+      <span class="hilo_time">$month.extraHumid1.mintime</span></td>
+    <td><span class="metric_value">$year.extraHumid1.min.formatted</span><br/>
+      <span class="hilo_time">$year.extraHumid1.mintime</span></td>
+    <td class="metric_units">$unit.label.extraHumid1</td>
+  </tr>
+  #end if
+  #if $day.extraHumid2.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Humidity 3:</td>
+    <td><span class="metric_value">$day.extraHumid2.max.formatted</span><br/>
+      <span class="hilo_time">$day.extraHumid2.maxtime</span></td>
+    <td><span class="metric_value">$month.extraHumid2.max.formatted</span><br/>
+      <span class="hilo_time">$month.extraHumid2.maxtime</span></td>
+    <td><span class="metric_value">$year.extraHumid2.max.formatted</span><br/>
+      <span class="hilo_time">$year.extraHumid2.maxtime</span></td>
+    <td class="metric_units">$unit.label.extraHumid2</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Humidity 3:</td>
+    <td><span class="metric_value">$day.extraHumid2.min.formatted</span><br/>
+      <span class="hilo_time">$day.extraHumid2.mintime</span></td>
+    <td><span class="metric_value">$month.extraHumid2.min.formatted</span><br/>
+      <span class="hilo_time">$month.extraHumid2.mintime</span></td>
+    <td><span class="metric_value">$year.extraHumid2.min.formatted</span><br/>
+      <span class="hilo_time">$year.extraHumid2.mintime</span></td>
+    <td class="metric_units">$unit.label.extraHumid2</td>
+  </tr>
+  #end if
+  #if $day.leafWet1.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Humidity 4:</td>
+    <td><span class="metric_value">$day.leafWet1.max.formatted</span><br/>
+      <span class="hilo_time">$day.leafWet1.maxtime</span></td>
+    <td><span class="metric_value">$month.leafWet1.max.formatted</span><br/>
+      <span class="hilo_time">$month.leafWet1.maxtime</span></td>
+    <td><span class="metric_value">$year.leafWet1.max.formatted</span><br/>
+      <span class="hilo_time">$year.leafWet1.maxtime</span></td>
+    <td class="metric_units">$unit.label.leafWet1</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Humidity 4:</td>
+    <td><span class="metric_value">$day.leafWet1.min.formatted</span><br/>
+      <span class="hilo_time">$day.leafWet1.mintime</span></td>
+    <td><span class="metric_value">$month.leafWet1.min.formatted</span><br/>
+      <span class="hilo_time">$month.leafWet1.mintime</span></td>
+    <td><span class="metric_value">$year.leafWet1.min.formatted</span><br/>
+      <span class="hilo_time">$year.leafWet1.mintime</span></td>
+    <td class="metric_units">$unit.label.leafWet1</td>
+  </tr>
+  #end if
+  #if $day.soilMoist1.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Humidity 5:</td>
+    <td><span class="metric_value">$day.soilMoist1.max.formatted</span><br/>
+      <span class="hilo_time">$day.soilMoist1.maxtime</span></td>
+    <td><span class="metric_value">$month.soilMoist1.max.formatted</span><br/>
+      <span class="hilo_time">$month.soilMoist1.maxtime</span></td>
+    <td><span class="metric_value">$year.soilMoist1.max.formatted</span><br/>
+      <span class="hilo_time">$year.soilMoist1.maxtime</span></td>
+    <td class="metric_units">$unit.label.soilMoist1</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Humidity 5:</td>
+    <td><span class="metric_value">$day.soilMoist1.min.formatted</span><br/>
+      <span class="hilo_time">$day.soilMoist1.mintime</span></td>
+    <td><span class="metric_value">$month.soilMoist1.min.formatted</span><br/>
+      <span class="hilo_time">$month.soilMoist1.mintime</span></td>
+    <td><span class="metric_value">$year.soilMoist1.min.formatted</span><br/>
+      <span class="hilo_time">$year.soilMoist1.mintime</span></td>
+    <td class="metric_units">$unit.label.soilMoist1</td>
+  </tr>
+  #end if
+  #if $day.soilMoist2.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Humidity 6:</td>
+    <td><span class="metric_value">$day.soilMoist2.max.formatted</span><br/>
+      <span class="hilo_time">$day.soilMoist2.maxtime</span></td>
+    <td><span class="metric_value">$month.soilMoist2.max.formatted</span><br/>
+      <span class="hilo_time">$month.soilMoist2.maxtime</span></td>
+    <td><span class="metric_value">$year.soilMoist2.max.formatted</span><br/>
+      <span class="hilo_time">$year.soilMoist2.maxtime</span></td>
+    <td class="metric_units">$unit.label.soilMoist2</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Humidity 6:</td>
+    <td><span class="metric_value">$day.soilMoist2.min.formatted</span><br/>
+      <span class="hilo_time">$day.soilMoist2.mintime</span></td>
+    <td><span class="metric_value">$month.soilMoist2.min.formatted</span><br/>
+      <span class="hilo_time">$month.soilMoist2.mintime</span></td>
+    <td><span class="metric_value">$year.soilMoist2.min.formatted</span><br/>
+      <span class="hilo_time">$year.soilMoist2.mintime</span></td>
+    <td class="metric_units">$unit.label.soilMoist2</td>
+  </tr>
+  #end if
+  #if $day.soilMoist3.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Humidity 7:</td>
+    <td><span class="metric_value">$day.soilMoist3.max.formatted</span><br/>
+      <span class="hilo_time">$day.soilMoist3.maxtime</span></td>
+    <td><span class="metric_value">$month.soilMoist3.max.formatted</span><br/>
+      <span class="hilo_time">$month.soilMoist3.maxtime</span></td>
+    <td><span class="metric_value">$year.soilMoist3.max.formatted</span><br/>
+      <span class="hilo_time">$year.soilMoist3.maxtime</span></td>
+    <td class="metric_units">$unit.label.soilMoist3</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Humidity 7:</td>
+    <td><span class="metric_value">$day.soilMoist3.min.formatted</span><br/>
+      <span class="hilo_time">$day.soilMoist3.mintime</span></td>
+    <td><span class="metric_value">$month.soilMoist3.min.formatted</span><br/>
+      <span class="hilo_time">$month.soilMoist3.mintime</span></td>
+    <td><span class="metric_value">$year.soilMoist3.min.formatted</span><br/>
+      <span class="hilo_time">$year.soilMoist3.mintime</span></td>
+    <td class="metric_units">$unit.label.soilMoist3</td>
+  </tr>
+  #end if
+  #if $day.soilMoist4.has_data
+  <tr style='vertical-align:top'>
+    <td class="metric_name">High Humidity 8:</td>
+    <td><span class="metric_value">$day.soilMoist4.max.formatted</span><br/>
+      <span class="hilo_time">$day.soilMoist4.maxtime</span></td>
+    <td><span class="metric_value">$month.soilMoist4.max.formatted</span><br/>
+      <span class="hilo_time">$month.soilMoist4.maxtime</span></td>
+    <td><span class="metric_value">$year.soilMoist4.max.formatted</span><br/>
+      <span class="hilo_time">$year.soilMoist4.maxtime</span></td>
+    <td class="metric_units">$unit.label.soilMoist4</td>
+  </tr>
+  <tr style='vertical-align:top'>
+    <td class="metric_name">Low Humidity 8:</td>
+    <td><span class="metric_value">$day.soilMoist4.min.formatted</span><br/>
+      <span class="hilo_time">$day.soilMoist4.mintime</span></td>
+    <td><span class="metric_value">$month.soilMoist4.min.formatted</span><br/>
+      <span class="hilo_time">$month.soilMoist4.mintime</span></td>
+    <td><span class="metric_value">$year.soilMoist4.min.formatted</span><br/>
+      <span class="hilo_time">$year.soilMoist4.mintime</span></td>
+    <td class="metric_units">$unit.label.soilMoist4</td>
+  </tr>
+  #end if
+</table>
+<div id='footer'>
+  <table>
+    <tr><td class='label'>altitude:</td>
+      <td>$station.altitude</td></tr>
+    <tr><td class='label'>location:</td>
+      <td>$station.latitude[0]&deg; $station.latitude[1]' $station.latitude[2], $station.longitude[0]&deg; $station.longitude[1]' $station.longitude[2]</td></tr>
+    <tr><td class='label'>station:</td>
+      <td>$station.hardware</td></tr>
+    <tr><td class='label'>server:</td>
+      <td>$station.os_uptime</td></tr>
+    <tr><td class='label'>weewx:</td>
+      <td>$station.uptime</td></tr>
+    <tr><td></td>
+      <td>$station.version</td></tr>
+  </table>
+</div>
+      </div>
+      <div id='graphs_day' class='data_graphs'>
+        <img src="daytemp_a.png" alt="temperatures-a" />
+        <img src="daytemp_b.png" alt="temperatures-b" />
+        <img src="dayhumidity_a.png" alt="humidity-a" />
+        <img src="dayhumidity_b.png" alt="humidity-b" />
+        <img src="daydewpoint_a.png" alt="dewpoint-a" />
+        <img src="dayheatindex_a.png" alt="heatindex-a" />
+        <img src="daybatterystatus_a.png" alt="batterystatus-a" />
+        <img src="daybatterystatus_b.png" alt="batterystatus-b" />
+        <img src="dayrx.png" alt="rx" />
+      </div>
+      <div id='graphs_week' class='data_graphs' style='display:none'>
+        <img src="weektemp_a.png" alt="temperatures-a" />
+        <img src="weektemp_b.png" alt="temperatures-b" />
+        <img src="weekhumidity_a.png" alt="humidity-a" />
+        <img src="weekhumidity_b.png" alt="humidity-b" />
+        <img src="weekdewpoint_a.png" alt="dewpoint-a" />
+        <img src="weekheatindex_a.png" alt="heatindex-a" />
+        <img src="weekbatterystatus_a.png" alt="batterystatus-a" />
+        <img src="weekbatterystatus_b.png" alt="batterystatus-b" />
+        <img src="weekrx.png" alt="rx" />
+      </div>
+      <div id='graphs_month' class='data_graphs' style='display:none'>
+        <img src="monthtemp_a.png" alt="temperatures-a" />
+        <img src="monthtemp_b.png" alt="temperatures-b" />
+        <img src="monthhumidity_a.png" alt="humidity-a" />
+        <img src="monthhumidity_b.png" alt="humidity-b" />
+        <img src="monthdewpoint_a.png" alt="dewpoint-a" />
+        <img src="monthheatindex_a.png" alt="heatindex-a" />
+        <img src="monthbatterystatus_a.png" alt="batterystatus-a" />
+        <img src="monthbatterystatus_b.png" alt="batterystatus-b" />
+        <img src="monthrx.png" alt="rx" />
+      </div>
+      <div id='graphs_year' class='data_graphs' style='display:none'>
+        <img src="yeartemp_a.png" alt="temperatures-a" />
+        <img src="yeartemp_b.png" alt="temperatures-b" />
+        <img src="yearhumidity_a.png" alt="humidity-a" />
+        <img src="yearhumidity_b.png" alt="humidity-b" />
+        <img src="yeardewpoint_a.png" alt="dewpoint-a" />
+        <img src="yearheatindex_a.png" alt="heatindex-a" />
+        <img src="yearbatterystatus_a.png" alt="batterystatus-a" />
+        <img src="yearbatterystatus_b.png" alt="batterystatus-b" />
+        <img src="yearrx.png" alt="rx" />
+      </div>
+    </div>
+  </body>
+</html>

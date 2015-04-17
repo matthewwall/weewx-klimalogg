@@ -1185,7 +1185,7 @@ import weewx.wxformulas
 import weeutil.weeutil
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '0.29p18'
+DRIVER_VERSION = '1.0'
 
 
 def loader(config_dict, _):
@@ -3838,7 +3838,7 @@ class CommunicationService(object):
             if self.config_serial is not None and (
                     length == 0x7d or length == 0xb5 or length == 0x07 or
                     length == 0x30 or length == 0x1e or length == 0x06):
-                logerr('generateResponse: intercepted message from device %04x with length: %02x; wait 30 s' % (bufferID, length))
+                logerr('generateResponse: intercepted message from device %04x with length: %02x; wait 400 ms' % (bufferID, length))
                 self.setSleep(0.400, 0.010)
             else:
                 self.setSleep(0.075, 0.005)
