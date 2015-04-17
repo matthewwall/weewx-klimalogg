@@ -1091,7 +1091,7 @@ import weewx.wxformulas
 import weeutil.weeutil
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '0.29p12'
+DRIVER_VERSION = '0.29p13'
 
 
 def loader(config_dict, _):
@@ -1113,7 +1113,6 @@ DEBUG_WEATHER_DATA = 0
 DEBUG_HISTORY_DATA = 0
 DEBUG_DUMP_FORMAT = 'auto'
 LIMIT_REC_READ_TO = 0
-
 
 # map the base sensor and 8 remote sensors to columns in the database schema
 WVIEW_SENSOR_MAP = {
@@ -1329,6 +1328,7 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     @property
     def default_stanza(self):
         return """
+
 [KlimaLogg]
     # This section is for the TFA KlimaLogg series of weather stations.
 
@@ -1336,11 +1336,26 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     # US uses 915 MHz, EU uses 868.3 MHz.  Default is EU.
     transceiver_frequency = EU
 
+    # The serial number will be used to choose the right Weather Display Transceiver when more than one is present.
+    # TIP: when the serial number of a transceiver is not known yet, remove temporary the other transceiver from
+    # your server and start the driver without the serial number setting; the serial number and devid will be
+    # presented in the debug logging.
+    # USB transceiver Kat.Nr.: 30.3175  05/2014
+    # serial = 010128031400117  # devid = 0x0075
+
     # The station model, e.g., 'TFA KlimaLoggPro' or 'TFA KlimaLogg'
     model = TFA KlimaLogg
 
     # The driver to use:
     driver = weewx.drivers.kl
+
+    # debug flags:
+    #  0=no logging; 1=minimum logging; 2=normal logging; 3=detailed logging
+    debug_comm = 2
+    debug_config_data = 2
+    debug_weather_data = 2
+    debug_history_data = 2
+    debug_dump_format = auto
 
     # The timing of history and weather messages is set by the timing parameter
     # Do not change this value if you don't know what you are doing!
@@ -1348,6 +1363,16 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
 
     # The catchup mechanism will catchup history records to a maximum of limit_rec_read_to [0 .. 51200]
     # limit_rec_read_to = 3001
+
+    # Sensor texts can have 1-10 upper-case alphanumeric characters;
+    #   other allowed characters: space - + ( ) * , . / \ and o (o = lower case O used as degree symbol)
+    # Note: You can't preset sensor texts for non-present sensors
+    # Example for 5 sensors:
+    # sensor_text1 = "5565 BED1"
+    # sensor_text2 = "6DDF LAUN"
+    # sensor_text3 = "7131 FRID"
+    # sensor_text4 = "52F4 BED2"
+    # sensor_text5 = "67D7 BATH"
 
     # The section below is for wview database mapping only; leave this section out for kl mapping
     # -------------------------------------------------------------------------------------------
@@ -1357,25 +1382,35 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     #
     # WARNING: Any change to the sensor mapping should be followed by clearing
     # of the database, otherwise data will be mixed up.
-    #[[sensor_map]]
-    #    Temp0      = inTemp      # save base station temperature as inTemp
-    #    Humidity0  = inHumidity  # save base station humidity as inHumidity
-    #    Temp1      = outTemp     # save sensor 1 temperature as outTemp
-    #    Humidity1  = outHumidity # save sensor 1 humidity as outHumidity
-    #    Temp2      = extraTemp1
-    #    Humidity2  = extraHumid1
-    #    Temp3      = extraTemp2
-    #    Humidity3  = extraHumid2
-    #    Temp4      = extraTemp3
-    #    Humidity4  = leafWet1
-    #    Temp5      = soilTemp1
-    #    Humidity5  = soilMoist1
-    #    Temp6      = soilTemp2
-    #    Humidity6  = soilMoist2
-    #    Temp7      = soilTemp3
-    #    Humidity7  = soilMoist3
-    #    Temp8      = soilTemp4
-    #    Humidity8  = soilMoist4
+    [[sensor_map]]
+        Temp0          = inTemp      # save base station temperature as inTemp
+        Humidity0      = inHumidity  # save base station humidity as inHumidity
+        Temp1          = outTemp     # save sensor 1 temperature as outTemp
+        Humidity1      = outHumidity # save sensor 1 humidity as outHumidity
+        Temp2          = extraTemp1
+        Humidity2      = extraHumid1
+        Temp3          = extraTemp2
+        Humidity3      = extraHumid2
+        Temp4          = extraTemp3
+        Humidity4      = leafWet1
+        Temp5          = soilTemp1
+        Humidity5      = soilMoist1
+        Temp6          = soilTemp2
+        Humidity6      = soilMoist2
+        Temp7          = soilTemp3
+        Humidity7      = soilMoist3
+        Temp8          = soilTemp4
+        Humidity8      = soilMoist4
+        RxCheckPercent = rxCheckPercent
+        BatteryStatus0 = consBatteryVoltage
+        BatteryStatus1 = txBatteryStatus
+        BatteryStatus2 = inTempBatteryStatus
+        BatteryStatus3 = outTempBatteryStatus
+        BatteryStatus4 = windBatteryStatus
+        BatteryStatus5 = rainBatteryStatus
+        BatteryStatus6 = supplyVoltage
+        BatteryStatus7 = referenceVoltage
+        BatteryStatus8 = heatingVoltage
     # -------------------------------------------------------------------------------------------
 """
 
@@ -1629,6 +1664,10 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         timing = int(stn_dict.get('timing', 300))
         self.first_sleep = float(timing)/1000
 
+        self.values = dict()
+        for i in range (1, 9):
+            self.values['sensor_text%d' % i] = stn_dict.get('sensor_text%d' % i, None)
+
         loginf('driver version is %s' % DRIVER_VERSION)
         loginf('frequency is %s' % self.frequency)
         loginf('timing is %s ms (%0.3f s)' % (timing, self.first_sleep))
@@ -1766,7 +1805,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
     def startUp(self):
         if self._service is not None:
             return
-        self._service = CommunicationService(self.first_sleep)
+        self._service = CommunicationService(self.first_sleep, self.values)
         self._service.setup(self.frequency, self.comm_interval,
                             self.vendor_id, self.product_id, self.serial)
         self._service.startRFThread()
@@ -1837,8 +1876,6 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
             for y in range(0, 9):
                 packet['dewpoint%d' % y] = weewx.wxformulas.dewpointC(packet['temp%d' % y], packet['humidity%d' % y])
                 packet['heatindex%d' % y] = weewx.wxformulas.heatindexC(packet['temp%d' % y], packet['humidity%d' % y])
-
-        ###lh TODO: sort out the battery flags
 
         return packet
 
@@ -1974,9 +2011,11 @@ class Decode(object):
                '0', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I',
                'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
                'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '-', '+', '(',
-               ')', ' ', '*', ',', '/', '\\', ' ', '\.', ' ', ' ',
+               ')', 'o', '*', ',', '/', '\\', ' ', '.', ' ', ' ',
                ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ',
                ' ', ' ', ' ', '@')
+
+    CHARSTR = "!1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ-+()o*,/\ ."
 
     @staticmethod
     def toCharacters3_2(buf, start, startOnHiNibble):
@@ -2308,6 +2347,8 @@ class StationConfig(object):
 
     def __init__(self):
         self.values = dict()
+        self.set_values = dict()
+        self.read_config_sensor_texts = True
         self.values['InBufCS'] = 0  # checksum of received config
         self.values['OutBufCS'] = 0  # calculated checksum from outbuf config
         self.values['Settings'] = 0
@@ -2323,6 +2364,8 @@ class StationConfig(object):
         for i in range(1, 9):
             self.values['Description%d' % i] = [0] * 8
             self.values['SensorText%d' % i] = ''
+            self.set_values['Description%d' % i] = [0] * 8
+            self.set_values['SensorText%d' % i] = ''
     
     def getOutBufCS(self):
         return self.values['OutBufCS']
@@ -2339,6 +2382,60 @@ class StationConfig(object):
         # reset Humidity Lo alarm of station when stations clock is within margins
         self.values['Humidity0Min'] = 20
         self.values['AlarmSet'][4] = (self.values['AlarmSet'][4] & 0xfd)
+
+    def setSensorText(self, values):
+        # test if config is read and sensor texts are not set before
+        if self.values['InBufCS'] != 0 and self.read_config_sensor_texts:
+            self.read_config_sensor_texts = False
+            # Use the sensor_text settings in weewx.conf to preset the sensor texts
+            for x in range (1, 9):
+                txt = [0] * 8
+                lbl = 'sensor_text%d' % x
+                self.set_values['SensorText%d' % x] = values[lbl]
+                sensor_text = self.set_values['SensorText%d' % x]
+                if sensor_text is not None:
+                    if len(sensor_text) > 10:
+                        logerr('Config sensor_text%d: "%s" has more than 10 characters' % (x, sensor_text))
+                    else:
+                        text_ok = True
+                        for y in range (0, len(sensor_text)):
+                            if Decode.CHARSTR.find(sensor_text[y:y+1]) <= 0:
+                                text_ok = False
+                                logerr('Config sensor_text%d: "%s" contains not-allowd charachter %s on pos %s' %
+                                       (x, sensor_text, sensor_text[y:y+1], y+1))
+                        if text_ok:
+                            padded_sensor_text = sensor_text.ljust(10, '!')
+                        else:
+                            sensor_text = None
+                if sensor_text is not None:
+                    if self.values['SensorText%s' % x] == '(No sensor)':
+                        logerr('Config sensor_text%d: "%s" not allowed for non present sensor' % (x, sensor_text))
+                    else:
+                        logdbg('Config sensor_text%d: "%s"' % (x, sensor_text))
+                        txt = [0] * 8
+                        # just for clarity we didn't 'optimize' the code below
+                        # translate 10 characters of 6 bits into 8 bytes of 8 bits
+                        char_id1 = Decode.CHARSTR.find(padded_sensor_text[0:1])
+                        char_id2 = Decode.CHARSTR.find(padded_sensor_text[1:2])
+                        char_id3 = Decode.CHARSTR.find(padded_sensor_text[2:3])
+                        char_id4 = Decode.CHARSTR.find(padded_sensor_text[3:4])
+                        char_id5 = Decode.CHARSTR.find(padded_sensor_text[4:5])
+                        char_id6 = Decode.CHARSTR.find(padded_sensor_text[5:6])
+                        char_id7 = Decode.CHARSTR.find(padded_sensor_text[6:7])
+                        char_id8 = Decode.CHARSTR.find(padded_sensor_text[7:8])
+                        char_id9 = Decode.CHARSTR.find(padded_sensor_text[8:9])
+                        char_id10 = Decode.CHARSTR.find(padded_sensor_text[9:10])
+                        txt[7] = ((char_id1 << 6) & 0xC0) + (char_id2 & 0x30) + ((char_id1 >> 2) & 0x0F)
+                        txt[6] = ((char_id3 << 2) & 0xF0) + (char_id2 & 0x0F)
+                        txt[5] = ((char_id4 << 4) & 0xF0) + ((char_id3 << 2) &0x0C) + ((char_id4 >> 4) &0x03)
+                        txt[4] = ((char_id5 << 6) & 0xC0) + (char_id6 & 0x30) + ((char_id5 >> 2) & 0x0F)
+                        txt[3] = ((char_id7 << 2) & 0xF0) + (char_id6 & 0x0F)
+                        txt[2] = ((char_id8 << 4) & 0xF0) + ((char_id7 << 2) &0x0C) + ((char_id8 >> 4) &0x03)
+                        txt[1] = ((char_id9 << 6) & 0xC0) + (char_id10 & 0x30) + ((char_id9 >> 2) & 0x0F)
+                        txt[0] = (char_id10 & 0x0F)
+                        # copy the results to the outputbuffer data
+                        self.values['Description%d' % x] = txt
+                        self.values['SensorText%d' % x] = sensor_text.ljust(10)
 
     @staticmethod
     def reverseByteOrder(buf, start, count):
@@ -2411,7 +2508,6 @@ class StationConfig(object):
         if self.values['HistoryInterval'] > HI_05MIN:
             logdbg('change HistoryInterval to 5 minutes')
             self.values['HistoryInterval'] = HI_05MIN
-
         newbuf[5] = self.values['Settings']
         newbuf[6] = self.values['TimeZone']
         newbuf[7] = self.values['HistoryInterval']
@@ -2478,7 +2574,7 @@ class StationConfig(object):
                     self.values['Humidity%dMax' % x]))
         for x in range(1, 9):
             byte_str = ' '.join(['%02x' % y for y in self.values['Description%d' % x]])
-            logdbg('Description%d: %s; SensorText: %s' % (x, byte_str, self.values['SensorText%s' % x]))
+            logdbg('Description%d: %s; SensorText%d: %s' % (x, byte_str, x, self.values['SensorText%s' % x]))
 
     def asDict(self):
         return {'checksum_in': self.values['InBufCS'],
@@ -2591,7 +2687,6 @@ class TransceiverSettings(object):
 
 class LastStat(object):
     def __init__(self):
-        self.last_battery_status = None
         self.last_link_quality = None
         self.last_history_index = None
         self.latest_history_index = None
@@ -2600,17 +2695,15 @@ class LastStat(object):
         self.last_history_ts = 0
         self.last_config_ts = 0
 
-    def update(self, seen_ts=None, quality=None, battery=None,
+    def update(self, seen_ts=None, quality=None,
                weather_ts=None, history_ts=None, config_ts=None):
         if DEBUG_COMM > 1:
-            logdbg('LastStat: seen=%s quality=%s battery=%s weather=%s history=%s config=%s' %
-                   (seen_ts, quality, battery, weather_ts, history_ts, config_ts))
+            logdbg('LastStat: seen=%s quality=%s weather=%s history=%s config=%s' %
+                   (seen_ts, quality, weather_ts, history_ts, config_ts))
         if seen_ts is not None:
             self.last_seen_ts = seen_ts
         if quality is not None:
             self.last_link_quality = quality
-        if battery is not None:
-            self.last_battery_status = battery
         if weather_ts is not None:
             self.last_weather_ts = weather_ts
         if history_ts is not None:
@@ -3036,10 +3129,11 @@ class AX5051RegisterNames:
 
 class CommunicationService(object):
 
-    def __init__(self, first_sleep):
+    def __init__(self, first_sleep, values):
         logdbg('CommunicationService.init')
 
         self.first_sleep = first_sleep
+        self.values = values
         self.reg_names = dict()
         self.hid = Transceiver()
         self.transceiver_settings = TransceiverSettings()
@@ -3190,7 +3284,6 @@ class CommunicationService(object):
         now = int(time.time())
         self.last_stat.update(seen_ts=now,
                               quality=(buf[4] & 0x7f), 
-                              battery=(buf[2] & 0xf),
                               config_ts=now)
         cs = buf[124] | (buf[123] << 8)
         self.setSleep(self.first_sleep, 0.010)
@@ -3219,11 +3312,11 @@ class CommunicationService(object):
 
         # update the connection cache
         self.last_stat.update(seen_ts=now,
-                              quality=(buf[4] & 0x7f), 
-                              battery=(buf[2] & 0xf),
+                              quality=(buf[4] & 0x7f),
                               weather_ts=now)
 
         cs = buf[6] | (buf[5] << 8)
+        self.station_config.setSensorText(self.values)
         changed, cfgbuf = self.station_config.testConfigChanged()
         inBufCS = self.station_config.getInBufCS()
         if inBufCS == 0 or inBufCS != cs:
@@ -3261,7 +3354,6 @@ class CommunicationService(object):
         now = int(time.time())
         self.last_stat.update(seen_ts=now,
                               quality=(buf[3] & 0x7f),
-                              battery=(buf[2] & 0xf),
                               history_ts=now)
 
         data = HistoryData()
@@ -3790,10 +3882,11 @@ class CommunicationService(object):
         except DataWritten:
             logdbg('SetTime/SetConfig data written')
         except BadResponse, e:
-            self.unknownCount += 1
-            # logerr('generateResponse failed: %s' % e)
+            logerr('generateResponse failed: %s' % e)
+            time.sleep(1)
         except UnknownDeviceId, e:
-            self.unknownCount += 1
+            logdbg('generateResponse failed: %s' % e)
+            time.sleep(1)
         self.hid.setTX()
 
     # these are for diagnostics and debugging
