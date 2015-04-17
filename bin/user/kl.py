@@ -143,28 +143,33 @@ Response type:
 20: GetConfig
 30: Current Weather
 40: Actual / Outstanding History
-50: not known yet; maybe quality or MEM percent ???
+50: Request Read-History (MEM % > 0)
 51: Request First-Time Config
 52: Request SetConfig
 53: Request SetTime
 
-000:  00 00 07 DevID LI 10 64 CfgCS xx xx xx xx xx xx xx xx xx  Time/Config written
-000:  00 00 7d DevID LI 20 64 [ConfigData .. .. .. .. .. CfgCS] GetConfig
-000:  00 00 e5 DevID LI 30 64 CfgCS [CurData .. .. .. .. .. ..  Current Weather
-000:  00 00 b5 DevID LI 40 64 CfgCS LateAdr  ThisAdr  [HisData  Outstanding History
-000:  00 00 b5 DevID LI 40 64 CfgCS LateAdr  ThisAdr  [HisData  Actual History
-000:  00 00 b5 DevID LI 50 64 CfgCS xx xx xx xx xx xx xx xx xx  Quality or MEM percent ???
-000:  00 00 07 f0 f0 ff 51 64 CfgCS xx xx xx xx xx xx xx xx xx  Request FirstConfig
-000:  00 00 07 DevID LI 52 64 CfgCS xx xx xx xx xx xx xx xx xx  Request SetConfig
-000:  00 00 07 DevID LI 53 64 CfgCS xx xx xx xx xx xx xx xx xx  Request SetTime
+000:  00 00 07 DevID LI 10 SQ CfgCS xx xx xx xx xx xx xx xx xx  Time/Config written
+000:  00 00 7d DevID LI 20 SQ [ConfigData .. .. .. .. .. CfgCS] GetConfig
+000:  00 00 e5 DevID LI 30 SQ CfgCS [CurData .. .. .. .. .. ..  Current Weather
+000:  00 00 b5 DevID LI 40 SQ CfgCS LateAdr  ThisAdr  [HisData  Outstanding History
+000:  00 00 b5 DevID LI 40 SQ CfgCS LateAdr  ThisAdr  [HisData  Actual History
+000:  00 00 b5 DevID LI 50 MP CfgCS xx xx xx xx xx xx xx xx xx  Request Read History
+000:  00 00 07 f0 f0 ff 51 SQ CfgCS xx xx xx xx xx xx xx xx xx  Request FirstConfig
+000:  00 00 07 DevID LI 52 SQ CfgCS xx xx xx xx xx xx xx xx xx  Request SetConfig
+000:  00 00 07 DevID LI 53 SQ CfgCS xx xx xx xx xx xx xx xx xx  Request SetTime
 
 00:    messageID
 01:    00
 02:    Message Length (starting with next byte)
 03-04: DeviceID          [devID]
-05:    LI/ff             Logger ID: 0-9 = Logger 1 - logger 10
+05:    LI = Logger ID / ff (at init)    Logger ID: 0-9 = Logger 1 - logger 10
 06:    responseType
-07:    Signal Quality   (in steps of 5)
+
+Additional bytes all GetFrame messages except Request Read History
+07:    SQ = Signal Quality   (in steps of 5)
+
+Additional bytes GetFrame message Request Read History
+07:    MP = Memory Percentage not read to server   (in steps of 5)
 
 Additional bytes all GetFrame messages except ReadConfig and WriteConfig
 08-9:  Config checksum [CfgCS]
@@ -441,17 +446,57 @@ start  chars name
 223    12 AlarmData* ('000000000000')
 229    0  end
 
-* AlarmData
-Humidity0Max: 00 00 00 00 00 01 00 00 00 00 00 00
-Humidity0Min: 00 00 00 00 00 02 00 00 00 00 00 00
-Temp0Max:     00 00 00 00 00 04 00 00 00 00 00 00
-Temp0Min:     00 00 00 00 00 08 00 00 00 00 00 00
-Humidity1Max: 00 00 00 00 00 10 00 00 00 00 00 00
-Humidity1Min: 00 00 00 00 00 20 00 00 00 00 00 00
-Temp1Max:     00 00 00 00 00 40 00 00 00 00 00 00
-Temp1Min:     00 00 00 00 00 80 00 00 00 00 00 00
-etc, etc
+* AlarmData group 1: xx xx xx xx xx xx 00 00 00 00 00 00
+80	0	0	0	0	0	Sensor 8 TX batt low
+40	0	0	0	0	0	Sensor 7 TX batt low
+20	0	0	0	0	0	Sensor 6 TX batt low
+10	0	0	0	0	0	Sensor 5 TX batt low
+8	0	0	0	0	0	Sensor 4 TX batt low
+4	0	0	0	0	0	Sensor 3 TX batt low
+2	0	0	0	0	0	Sensor 2 TX batt low
+1	0	0	0	0	0	Sensor 1 TX batt low
+0	80	0	0	0	0	KlimaLogg RX batt low
+0	40	0	0	0	0
+0	20	0	0	0	0
+0	10	0	0	0	0
+0	8	0	0	0	0	Temp8Min
+0	4	0	0	0	0	Temp8Max
+0	2	0	0	0	0	Humidity8Min
+0	1	0	0	0	0	Humidity8Max
+0	0	80	0	0	0	Temp7Min
+0	0	40	0	0	0	Temp7Max
+0	0	20	0	0	0	Humidity7Min
+0	0	10	0	0	0	Humidity7Max
+0	0	8	0	0	0	Temp6Min
+0	0	4	0	0	0	Temp6Max
+0	0	2	0	0	0	Humidity6Min
+0	0	1	0	0	0	Humidity6Max
+0	0	0	80	0	0	Temp5Min
+0	0	0	40	0	0	Temp5Max
+0	0	0	20	0	0	Humidity5Min
+0	0	0	10	0	0	Humidity5Max ^
+0	0	0	8	0	0	Temp4Min
+0	0	0	4	0	0	Temp4Max
+0	0	0	2	0	0	Humidity4Min
+0	0	0	1	0	0	Humidity4Max
+0	0	0	0	80	0	Temp3Min
+0	0	0	0	40	0	Temp3Max
+0	0	0	0	20	0	Humidity3Min
+0	0	0	0	10	0	Humidity3Max
+0	0	0	0	8	0	Temp2Min
+0	0	0	0	4	0	Temp2Max
+0	0	0	0	2	0	Humidity2Min
+0	0	0	0	1	0	Humidity2Max
+0	0	0	0	0	80	Temp1Min v
+0	0	0	0	0	40	Temp1Max
+0	0	0	0	0	20	Humidity1Min
+0	0	0	0	0	10	Humidity1Max
+0	0	0	0	0	8	Temp0Min
+0	0	0	0	0	4	Temp0Max
+0	0	0	0	0	2	Humidity0Min
+0	0	0	0	0	1	Humidity0Max
 
+* AlarmData group 2: 00 00 00 00 00 00 xx xx xx xx xx xx
 
 -------------------------------------------------------------------------------
 date conversion: (2013-06-21)
@@ -1046,7 +1091,7 @@ import weewx.wxformulas
 import weeutil.weeutil
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '0.29p10'
+DRIVER_VERSION = '0.29p12'
 
 
 def loader(config_dict, _):
@@ -1090,6 +1135,16 @@ WVIEW_SENSOR_MAP = {
     'Humidity7': 'soilMoist3',
     'Temp8': 'soilTemp4',
     'Humidity8': 'soilMoist4',
+    'RxCheckPercent': 'rxCheckPercent',
+    'BatteryStatus0': 'consBatteryVoltage',
+    'BatteryStatus1': 'txBatteryStatus',
+    'BatteryStatus2': 'inTempBatteryStatus',
+    'BatteryStatus3': 'outTempBatteryStatus',
+    'BatteryStatus4': 'windBatteryStatus',
+    'BatteryStatus5': 'rainBatteryStatus',
+    'BatteryStatus6': 'supplyVoltage',
+    'BatteryStatus7': 'referenceVoltage',
+    'BatteryStatus8': 'heatingVoltage',
 }
 
 # sensor map when using the kl schema
@@ -1112,6 +1167,16 @@ KL_SENSOR_MAP = {
     'Humidity7': 'humidity7',
     'Temp8': 'temp8',
     'Humidity8': 'humidity8',
+    'RxCheckPercent': 'rxCheckPercent',
+    'BatteryStatus0': 'batteryStatus0',
+    'BatteryStatus1': 'batteryStatus1',
+    'BatteryStatus2': 'batteryStatus2',
+    'BatteryStatus3': 'batteryStatus3',
+    'BatteryStatus4': 'batteryStatus4',
+    'BatteryStatus5': 'batteryStatus5',
+    'BatteryStatus6': 'batteryStatus6',
+    'BatteryStatus7': 'batteryStatus7',
+    'BatteryStatus8': 'batteryStatus8',
 }
 
 
@@ -1759,6 +1824,15 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                 else:
                     x = data.values[k]
                 packet[self.sensor_map[k]] = x
+        # Signal quality
+        packet[self.sensor_map['RxCheckPercent']] = data.values['SignalQuality']
+        # battery low stati
+        packet[self.sensor_map['BatteryStatus0']] = 1 if data.values['AlarmData'][1] ^ 0x80 == 0 else 0
+        bitmask = 1
+        for y in range (1,9):
+            packet[self.sensor_map['BatteryStatus%d' % y]] = 1 if data.values['AlarmData'][0] ^ bitmask == 0 else 0
+            bitmask <<= 1
+        # dewpoints and heatindexes only for klschema
         if self.sensor_map['Temp0'] == 'temp0':
             for y in range(0, 9):
                 packet['dewpoint%d' % y] = weewx.wxformulas.dewpointC(packet['temp%d' % y], packet['humidity%d' % y])
@@ -1838,7 +1912,8 @@ RESPONSE_DATA_WRITTEN = 0x10
 RESPONSE_GET_CONFIG = 0x20
 RESPONSE_GET_CURRENT = 0x30
 RESPONSE_GET_HISTORY = 0x40
-RESPONSE_REQUEST = 0x50
+RESPONSE_REQUEST = 0x50  # the group of all 0x5x requests
+RESPONSE_REQ_READ_HISTORY = 0x50
 RESPONSE_REQ_FIRST_CONFIG = 0x51
 RESPONSE_REQ_SET_CONFIG = 0x52
 RESPONSE_REQ_SET_TIME = 0x53
@@ -3381,8 +3456,9 @@ class CommunicationService(object):
                               quality=(buf[4] & 0x7f))
         cs = buf[6] | (buf[5] << 8)
         resp = buf[3]
-        if resp == RESPONSE_REQUEST:
-            logdbg('handleNextAction: %02x (request)' % resp)
+        if resp == RESPONSE_REQ_READ_HISTORY:
+            memPerc = buf[4]
+            logdbg('handleNextAction: %02x (MEM percentage not read to server: %s)' % (resp, memPerc))
             self.setSleep(0.075, 0.005)
             newlen = length
             newbuf = buf
@@ -3714,17 +3790,10 @@ class CommunicationService(object):
         except DataWritten:
             logdbg('SetTime/SetConfig data written')
         except BadResponse, e:
-            logerr('generateResponse failed: %s' % e)
+            self.unknownCount += 1
+            # logerr('generateResponse failed: %s' % e)
         except UnknownDeviceId, e:
-            logdbg('%s' % e)
-            self.setSleep(0.001, 0.010)  # don't wait too long after not wanted message
-            # When one transceiver is used the serial number should be None
-            if self.getTransceiverSerNo() is not None:
-                self.unknownCount += 1
-                logdbg('%s, self.unknownCount: %s' % (e, self.unknownCount))
-                if self.unknownCount % 3 == 0:
-                    # wait each xth time y seconds to let the other transceiver get some own messages
-                    time.sleep(7)
+            self.unknownCount += 1
         self.hid.setTX()
 
     # these are for diagnostics and debugging
