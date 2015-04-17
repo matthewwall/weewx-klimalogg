@@ -1,5 +1,5 @@
 # TFA KlimaLogg driver for weewx
-# $Id: kl.py 2907 2015-02-07 05:04:30Z mwall $
+# $Id: kl.py 1246 2015-02-07 04:40:23Z mwall $
 #
 # Copyright 2015 Luc Heijst, Matthew Wall
 #
@@ -1046,7 +1046,7 @@ import weewx.wxformulas
 import weeutil.weeutil
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '0.29p8'
+DRIVER_VERSION = '0.29p9'
 
 
 def loader(config_dict, _):
@@ -1093,10 +1093,10 @@ WVIEW_SENSOR_MAP = {
 
 # sensor map when using the kl schema
 KL_SENSOR_MAP = {
-    'Temp0': 'inTemp',
-    'Humidity0': 'inHumidity',
-    'Temp1': 'outTemp',
-    'Humidity1': 'outHumidity',
+    'Temp0': 'temp0',
+    'Humidity0': 'humidity0',
+    'Temp1': 'temp1',
+    'Humidity1': 'humidity1',
     'Temp2': 'temp2',
     'Humidity2': 'humidity2',
     'Temp3': 'temp3',
@@ -1114,28 +1114,56 @@ KL_SENSOR_MAP = {
 }
 
 
-# kl schema to use in place of the wview schema
-schema = [('dateTime',    'INTEGER NOT NULL UNIQUE PRIMARY KEY'),
-          ('usUnits',     'INTEGER NOT NULL'),
-          ('interval',    'INTEGER NOT NULL'),
-          ('inTemp',      'REAL'),
-          ('outTemp',     'REAL'),
-          ('inHumidity',  'REAL'),
-          ('outHumidity', 'REAL'),
-          ('temp2',       'REAL'),
-          ('humidity2',   'REAL'),
-          ('temp3',       'REAL'),
-          ('humidity3',   'REAL'),
-          ('temp4',       'REAL'),
-          ('humidity4',   'REAL'),
-          ('temp5',       'REAL'),
-          ('humidity5',   'REAL'),
-          ('temp6',       'REAL'),
-          ('humidity6',   'REAL'),
-          ('temp7',       'REAL'),
-          ('humidity7',   'REAL'),
-          ('temp8',       'REAL'),
-          ('humidity8',   'REAL')]
+# kl schema (user/klschema.py) to use in place of the wview schema (schemas/wview.py)
+schema = [('dateTime',             'INTEGER NOT NULL UNIQUE PRIMARY KEY'),
+          ('usUnits',              'INTEGER NOT NULL'),
+          ('interval',             'INTEGER NOT NULL'),
+          ('temp0',                'REAL'),
+          ('temp1',                'REAL'),
+          ('temp2',                'REAL'),
+          ('temp3',                'REAL'),
+          ('temp4',                'REAL'),
+          ('temp5',                'REAL'),
+          ('temp6',                'REAL'),
+          ('temp7',                'REAL'),
+          ('temp8',                'REAL'),
+          ('humidity0',            'REAL'),
+          ('humidity1',            'REAL'),
+          ('humidity2',            'REAL'),
+          ('humidity3',            'REAL'),
+          ('humidity4',            'REAL'),
+          ('humidity5',            'REAL'),
+          ('humidity6',            'REAL'),
+          ('humidity7',            'REAL'),
+          ('humidity8',            'REAL'),
+          ('dewpoint0',            'REAL'),
+          ('dewpoint1',            'REAL'),
+          ('dewpoint2',            'REAL'),
+          ('dewpoint3',            'REAL'),
+          ('dewpoint4',            'REAL'),
+          ('dewpoint5',            'REAL'),
+          ('dewpoint6',            'REAL'),
+          ('dewpoint7',            'REAL'),
+          ('dewpoint8',            'REAL'),
+          ('heatindex0',           'REAL'),
+          ('heatindex1',           'REAL'),
+          ('heatindex2',           'REAL'),
+          ('heatindex3',           'REAL'),
+          ('heatindex4',           'REAL'),
+          ('heatindex5',           'REAL'),
+          ('heatindex6',           'REAL'),
+          ('heatindex7',           'REAL'),
+          ('heatindex8',           'REAL'),
+          ('rxCheckPercent',       'REAL'),
+          ('batteryStatus0',       'REAL'),
+          ('batteryStatus1',       'REAL'),
+          ('batteryStatus2',       'REAL'),
+          ('batteryStatus3',       'REAL'),
+          ('batteryStatus4',       'REAL'),
+          ('batteryStatus5',       'REAL'),
+          ('batteryStatus6',       'REAL'),
+          ('batteryStatus7',       'REAL'),
+          ('batteryStatus8',       'REAL')]
 
 
 def logmsg(dst, msg):
@@ -1826,6 +1854,7 @@ frequencies = {
     'US': 905000000,
     'EU': 868300000,
 }
+
 
 # NP - not present
 # OFL - outside factory limits
@@ -2987,16 +3016,16 @@ class CommunicationService(object):
         newbuf[3] = ACTION_SEND_TIME  # 0x60
         newbuf[4] = (cs >> 8) & 0xFF
         newbuf[5] = (cs >> 0) & 0xFF
-        newbuf[6] = (tm[5] % 10) + 0x10 * (tm[5] // 10)  #sec
-        newbuf[7] = (tm[4] % 10) + 0x10 * (tm[4] // 10)  #min
-        newbuf[8] = (tm[3] % 10) + 0x10 * (tm[3] // 10)  #hour
+        newbuf[6] = (tm[5] % 10) + 0x10 * (tm[5] // 10)  # sec
+        newbuf[7] = (tm[4] % 10) + 0x10 * (tm[4] // 10)  # min
+        newbuf[8] = (tm[3] % 10) + 0x10 * (tm[3] // 10)  # hour
         # mo=0, tu=1, we=2, th=3, fr=4, sa=5, su=6  # DayOfWeek format of ws28xx devices
         # mo=1, tu=2, we=3, th=4, fr=5, sa=6, su=7  # DayOfWeek format of klimalogg devices
         DayOfWeek = tm[6]+1       # py  from 1 - 7 - 1=Mon
-        newbuf[9]  = DayOfWeek % 10 + 0x10 * (tm[2] % 10)           #day_lo   + DoW
-        newbuf[10] = (tm[2] // 10)  + 0x10 * (tm[1] % 10)           #month_lo + day_hi
-        newbuf[11] = (tm[1] // 10)  + 0x10 * ((tm[0] - 2000) % 10)  #year-lo  + month-hi
-        newbuf[12] = (tm[0] - 2000) // 10                           #not used + year-hi
+        newbuf[9]  = DayOfWeek % 10 + 0x10 * (tm[2] % 10)           # day_lo   + DoW
+        newbuf[10] = (tm[2] // 10)  + 0x10 * (tm[1] % 10)           # month_lo + day_hi
+        newbuf[11] = (tm[1] // 10)  + 0x10 * ((tm[0] - 2000) % 10)  # year-lo  + month-hi
+        newbuf[12] = (tm[0] - 2000) // 10                           # not used + year-hi
         return newlen, newbuf
 
     def buildACKFrame(self, buf, action, cs, hidx=None):
@@ -3044,8 +3073,8 @@ class CommunicationService(object):
         newbuf[6] = 0x80  # TODO: not known what this means
         newbuf[7] = comInt & 0xFF
         newbuf[8] = (haddr >> 16) & 0xFF
-        newbuf[9] = (haddr >> 8 ) & 0xFF
-        newbuf[10] = (haddr >> 0 ) & 0xFF
+        newbuf[9] = (haddr >> 8) & 0xFF
+        newbuf[10] = (haddr >> 0) & 0xFF
         return newlen, newbuf
 
     def handleConfig(self, length, buf):
@@ -3162,18 +3191,19 @@ class CommunicationService(object):
 
         # check for an actual history record (tsPos1 == tsPos2) with valid
         # timestamp (tsPos1 != TS_1900)
-        # if history date/time differs more than 60 s from now then
+        # Take in account that communication might be stalled for 3 minutes during DCF reception and sensor scanning
+        # if history date/time differs more than 5 min from now then
         # reqSetTime and initiate alarm
         requestSetTime = False
         if tsPos1 == tsPos2 and tsPos1 != self.TS_1900:
-            if timeDiff > 60:
+            if timeDiff > 300:
                 self.station_config.setAlarmClockOffset()  # set Humidity0Min value to 99
                 requestSetTime = True
-                logerr('ERROR: DCF: %s; History record %s: date/time differs %s seconds from date/time now; please set the clock of your station' %
+                logerr('ERROR: DCF: %s; dateTime history record %s differs %s seconds from dateTime server; please check and set set the clock of your station' %
                        (dcfOn, thisIndex, timeDiff))
             else:
                 self.station_config.resetAlarmClockOffset()  # set Humidity0Min value to 20
-                logdbg('DCF = %s; History record %s: date/time differs %s seconds from date/time now' %
+                logdbg('DCF = %s; dateTime history record %s differs %s seconds from dateTime server' %
                        (dcfOn, thisIndex, timeDiff))
 
         # initially the first buffer presented is 6, in fact it starts at 0,
@@ -3232,10 +3262,24 @@ class CommunicationService(object):
                 self.records_skipped = 0
                 self.ts_last_rec = 0
             elif self.history_cache.next_index is not None:
-                # thisIndex should be the 1-6 record(s) after next_index
+
+                # thisIndex should be the 1-6 record(s) after next_index (note: index cycles after 51199 to 0)
                 indexRequested = self.history_cache.next_index
-                ### TODO: check for indexRequested+(1-6) > KlimaLoggDriver.max_records
-                if indexRequested+1 <= thisIndex <= indexRequested+6:
+                # check if thisIndex is within the range expected
+                thisIndexOk = False
+                if indexRequested + 6 < KlimaLoggDriver.max_records:
+                    # indexRequested 0 .. 51193
+                    if indexRequested + 1 <= thisIndex <= indexRequested + 6:
+                        thisIndexOk = True
+                elif indexRequested == (KlimaLoggDriver.max_records -1):
+                    # indexRequested = 51199
+                    if 0 <= thisIndex <= 5:
+                        thisIndexOk = True
+                elif thisIndex > indexRequested or thisIndex <= (indexRequested + 6 - KlimaLoggDriver.max_records):
+                    # indexRequested 51194 .. 51198 and thisIndex is within one of two ranges
+                    thisIndexOk = True
+
+                if thisIndexOk:
                     # get the next 1-6 history record(s)
                     for x in range(1, 7):
                         tsCurrentRec = tstr_to_ts(str(data.values['Pos%dDT' % x]))
@@ -3266,8 +3310,6 @@ class CommunicationService(object):
                                 logdbg('handleHistoryData: append record at Pos%d tsCurrentRec=%s' %
                                        (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
                                 self.history_cache.records.append(data.asDict(x))
-                                self.history_cache.num_scanned += 1
-                                self.history_cache.num_outstanding_records = nrec
                                 self.records_appended += 1
                                 # save only TS of good records
                                 self.ts_last_rec = tsCurrentRec
@@ -3283,12 +3325,13 @@ class CommunicationService(object):
                             self.records_skipped += 1
                     self.history_cache.next_index = thisIndex
                 else:
-                    loginf('handleHistoryData: index mismatch: received %s, expected %s - %s' %
-                           (thisIndex, indexRequested+1, indexRequested+6))
+                    loginf('handleHistoryData: index mismatch: indexRequested: %s, thisIndex: %s' %
+                           (indexRequested, thisIndex))
                 nextIndex = self.history_cache.next_index
-
-        logdbg('handleHistoryData: records appended=%s, records skipped=%s, next=%s' %
-               (self.records_appended, self.records_skipped, nextIndex))
+            self.history_cache.num_scanned += 1
+            self.history_cache.num_outstanding_records = nrec
+            logdbg('handleHistoryData: records appended=%s, records skipped=%s, next=%s' %
+                   (self.records_appended, self.records_skipped, nextIndex))
 
         """  Ask for a ReqSetTime message when the time of the KlimaLogg Pro differs too much from the current time.
         Note the setTime protocol itself works correct, but the station is not programmed to adjust it's internal clock
@@ -3383,9 +3426,9 @@ class CommunicationService(object):
 
     def configureRegisterNames(self):
         self.reg_names[AX5051RegisterNames.IFMODE]     = 0x00
-        self.reg_names[AX5051RegisterNames.MODULATION] = 0x41  #fsk
+        self.reg_names[AX5051RegisterNames.MODULATION] = 0x41  # fsk
         self.reg_names[AX5051RegisterNames.ENCODING]   = 0x07
-        self.reg_names[AX5051RegisterNames.FRAMING]    = 0x84  #1000:0100 ##?hdlc? |1000 010 0
+        self.reg_names[AX5051RegisterNames.FRAMING]    = 0x84  # 1000:0100 ##?hdlc? |1000 010 0
         self.reg_names[AX5051RegisterNames.CRCINIT3]   = 0xff
         self.reg_names[AX5051RegisterNames.CRCINIT2]   = 0xff
         self.reg_names[AX5051RegisterNames.CRCINIT1]   = 0xff
