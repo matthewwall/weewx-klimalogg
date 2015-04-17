@@ -1046,7 +1046,7 @@ import weewx.wxformulas
 import weeutil.weeutil
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '0.29p9'
+DRIVER_VERSION = '0.29p10'
 
 
 def loader(config_dict, _):
@@ -1067,6 +1067,7 @@ DEBUG_CONFIG_DATA = 0
 DEBUG_WEATHER_DATA = 0
 DEBUG_HISTORY_DATA = 0
 DEBUG_DUMP_FORMAT = 'auto'
+LIMIT_REC_READ_TO = 0
 
 
 # map the base sensor and 8 remote sensors to columns in the database schema
@@ -1276,7 +1277,16 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     # The driver to use:
     driver = weewx.drivers.kl
 
-    # You may change the sensor mapping by changing the values in the right
+    # The timing of history and weather messages is set by the timing parameter
+    # Do not change this value if you don't know what you are doing!
+    # timing = 300  # set a value (in ms) between 100 and 400
+
+    # The catchup mechanism will catchup history records to a maximum of limit_rec_read_to [0 .. 51200]
+    # limit_rec_read_to = 3001
+
+    # The section below is for wview database mapping only; leave this section out for kl mapping
+    # -------------------------------------------------------------------------------------------
+    # You may change the wview sensor mapping by changing the values in the right
     # column. Be sure you use valid weewx database field names; each field
     # name can be used only once.
     #
@@ -1301,6 +1311,7 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     #    Humidity7  = soilMoist3
     #    Temp8      = soilTemp4
     #    Humidity8  = soilMoist4
+    # -------------------------------------------------------------------------------------------
 """
 
     def prompt_for_settings(self):
@@ -1518,7 +1529,15 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         self.comm_interval = int(stn_dict.get('comm_interval', 6))
         self.frequency = stn_dict.get('transceiver_frequency', 'EU')
         self.serial = stn_dict.get('serial', None)
-        self.sensor_map = stn_dict.get('sensor_map', WVIEW_SENSOR_MAP)
+        self.sensor_map = stn_dict.get('sensor_map', KL_SENSOR_MAP)
+
+        if self.sensor_map['Temp0'] == 'temp0':
+            logdbg('database schema is kl-schema')
+        else:
+            logdbg('database schema is wview-schema')
+
+        global LIMIT_REC_READ_TO
+        LIMIT_REC_READ_TO = int(stn_dict.get('limit_rec_read_to', 3001))
 
         now = int(time.time())
         self._service = None
@@ -1672,6 +1691,10 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                         else:
                             x = r[k]
                         rec[self.sensor_map[k]] = x
+                if self.sensor_map['Temp0'] == 'temp0':
+                    for y in range(0, 9):
+                        rec['dewpoint%d' % y] = weewx.wxformulas.dewpointC(rec['temp%d' % y], rec['humidity%d' % y])
+                        rec['heatindex%d' % y] = weewx.wxformulas.heatindexC(rec['temp%d' % y], rec['humidity%d' % y])
                 yield rec
             last_ts = this_ts
 
@@ -1736,6 +1759,10 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                 else:
                     x = data.values[k]
                 packet[self.sensor_map[k]] = x
+        if self.sensor_map['Temp0'] == 'temp0':
+            for y in range(0, 9):
+                packet['dewpoint%d' % y] = weewx.wxformulas.dewpointC(packet['temp%d' % y], packet['humidity%d' % y])
+                packet['heatindex%d' % y] = weewx.wxformulas.heatindexC(packet['temp%d' % y], packet['humidity%d' % y])
 
         ###lh TODO: sort out the battery flags
 
@@ -2951,6 +2978,7 @@ class CommunicationService(object):
         self.firstSleep = 1
         self.nextSleep = 1
         self.pollCount = 0
+        self.unknownCount = 0
 
         self.running = False
         self.child = None
@@ -3174,6 +3202,7 @@ class CommunicationService(object):
 
         tsPos1 = tstr_to_ts(str(data.values['Pos1DT']))
         tsPos2 = tstr_to_ts(str(data.values['Pos2DT']))
+        tsPos6 = tstr_to_ts(str(data.values['Pos6DT']))
         if tsPos1 == self.TS_1900:
             # the first history record has date-time 1900-01-01 00:00:00
             # use the time difference with the second message
@@ -3195,12 +3224,13 @@ class CommunicationService(object):
         # if history date/time differs more than 5 min from now then
         # reqSetTime and initiate alarm
         requestSetTime = False
-        if tsPos1 == tsPos2 and tsPos1 != self.TS_1900:
+        if tsPos1 == tsPos6 and tsPos1 != self.TS_1900:
             if timeDiff > 300:
                 self.station_config.setAlarmClockOffset()  # set Humidity0Min value to 99
                 requestSetTime = True
                 logerr('ERROR: DCF: %s; dateTime history record %s differs %s seconds from dateTime server; please check and set set the clock of your station' %
                        (dcfOn, thisIndex, timeDiff))
+                logerr('ERROR: tsPos1: %s, tsPos2: %s' % (tsPos1, tsPos6))
             else:
                 self.station_config.resetAlarmClockOffset()  # set Humidity0Min value to 20
                 logdbg('DCF = %s; dateTime history record %s differs %s seconds from dateTime server' %
@@ -3245,11 +3275,12 @@ class CommunicationService(object):
                     else:
                         loginf('handleHistoryData: no start date known (empty database), use number stored (%d)' % nrec)
                         nreq = nrec
-                # Workaround for nrec up to 50,000; limit this number to 3001
-                # With historyInterval=15 min: about 1 month data,
-                # with HistoryInterval=5 min: about 10 days data
-                if nreq > 3001:
-                    nreq = 3001
+                # Workaround for nrec up to 50,000; limit this number to limit_rec_read
+                if nreq > LIMIT_REC_READ_TO:
+                    nreq = LIMIT_REC_READ_TO
+                    logdbg('Number of history records to catch up limited to: %s' % nreq)
+                if nreq >= KlimaLoggDriver.max_records:
+                    nrec = KlimaLoggDriver.max_records-1
                 idx = get_index(latestIndex - nreq)
                 self.history_cache.start_index = idx
                 self.history_cache.next_index = idx
@@ -3687,6 +3718,13 @@ class CommunicationService(object):
         except UnknownDeviceId, e:
             logdbg('%s' % e)
             self.setSleep(0.001, 0.010)  # don't wait too long after not wanted message
+            # When one transceiver is used the serial number should be None
+            if self.getTransceiverSerNo() is not None:
+                self.unknownCount += 1
+                logdbg('%s, self.unknownCount: %s' % (e, self.unknownCount))
+                if self.unknownCount % 3 == 0:
+                    # wait each xth time y seconds to let the other transceiver get some own messages
+                    time.sleep(7)
         self.hid.setTX()
 
     # these are for diagnostics and debugging
