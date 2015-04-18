@@ -1185,7 +1185,7 @@ import weewx.wxformulas
 import weeutil.weeutil
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.0'
+DRIVER_VERSION = '1.1'
 
 
 def loader(config_dict, _):
@@ -1273,7 +1273,7 @@ KL_SENSOR_MAP = {
 }
 
 
-# kl schema (user/klschema.py) to use in place of the wview schema (schemas/wview.py)
+# klimalogg schema to use in place of the default wview schema
 schema = [('dateTime',             'INTEGER NOT NULL UNIQUE PRIMARY KEY'),
           ('usUnits',              'INTEGER NOT NULL'),
           ('interval',             'INTEGER NOT NULL'),
@@ -1418,6 +1418,56 @@ def print_dict(data):
             print '%s: %s' % (x, data[x])
 
 
+# ensure that units are properly defined for the observations from the kl
+def configure_units():
+    import weewx.units
+    weewx.units.obs_group_dict['leafWet1'] = 'group_percent'
+    weewx.units.obs_group_dict['soilMoist1'] = 'group_percent'
+    weewx.units.obs_group_dict['soilMoist2'] = 'group_percent'
+    weewx.units.obs_group_dict['soilMoist3'] = 'group_percent'
+    weewx.units.obs_group_dict['soilMoist4'] = 'group_percent'
+
+    weewx.units.obs_group_dict['temp0'] = 'group_temperature'
+    weewx.units.obs_group_dict['temp1'] = 'group_temperature'
+    weewx.units.obs_group_dict['temp2'] = 'group_temperature'
+    weewx.units.obs_group_dict['temp3'] = 'group_temperature'
+    weewx.units.obs_group_dict['temp4'] = 'group_temperature'
+    weewx.units.obs_group_dict['temp5'] = 'group_temperature'
+    weewx.units.obs_group_dict['temp6'] = 'group_temperature'
+    weewx.units.obs_group_dict['temp7'] = 'group_temperature'
+    weewx.units.obs_group_dict['temp8'] = 'group_temperature'
+
+    weewx.units.obs_group_dict['humidity0'] = 'group_percent'
+    weewx.units.obs_group_dict['humidity1'] = 'group_percent'
+    weewx.units.obs_group_dict['humidity2'] = 'group_percent'
+    weewx.units.obs_group_dict['humidity3'] = 'group_percent'
+    weewx.units.obs_group_dict['humidity4'] = 'group_percent'
+    weewx.units.obs_group_dict['humidity5'] = 'group_percent'
+    weewx.units.obs_group_dict['humidity6'] = 'group_percent'
+    weewx.units.obs_group_dict['humidity7'] = 'group_percent'
+    weewx.units.obs_group_dict['humidity8'] = 'group_percent'
+
+    weewx.units.obs_group_dict['dewpoint0'] = 'group_temperature'
+    weewx.units.obs_group_dict['dewpoint1'] = 'group_temperature'
+    weewx.units.obs_group_dict['dewpoint2'] = 'group_temperature'
+    weewx.units.obs_group_dict['dewpoint3'] = 'group_temperature'
+    weewx.units.obs_group_dict['dewpoint4'] = 'group_temperature'
+    weewx.units.obs_group_dict['dewpoint5'] = 'group_temperature'
+    weewx.units.obs_group_dict['dewpoint6'] = 'group_temperature'
+    weewx.units.obs_group_dict['dewpoint7'] = 'group_temperature'
+    weewx.units.obs_group_dict['dewpoint8'] = 'group_temperature'
+
+    weewx.units.obs_group_dict['heatindex0'] = 'group_temperature'
+    weewx.units.obs_group_dict['heatindex1'] = 'group_temperature'
+    weewx.units.obs_group_dict['heatindex2'] = 'group_temperature'
+    weewx.units.obs_group_dict['heatindex3'] = 'group_temperature'
+    weewx.units.obs_group_dict['heatindex4'] = 'group_temperature'
+    weewx.units.obs_group_dict['heatindex5'] = 'group_temperature'
+    weewx.units.obs_group_dict['heatindex6'] = 'group_temperature'
+    weewx.units.obs_group_dict['heatindex7'] = 'group_temperature'
+    weewx.units.obs_group_dict['heatindex8'] = 'group_temperature'
+
+
 class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     @property
     def default_stanza(self):
@@ -1430,10 +1480,12 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     # US uses 915 MHz, EU uses 868.3 MHz.  Default is EU.
     transceiver_frequency = EU
 
-    # The serial number will be used to choose the right Weather Display Transceiver when more than one is present.
-    # TIP: when the serial number of a transceiver is not known yet, remove temporary the other transceiver from
-    # your server and start the driver without the serial number setting; the serial number and devid will be
-    # presented in the debug logging.
+    # The serial number will be used to choose the right Weather Display
+    # Transceiver when more than one is present.  When the serial number
+    # of a transceiver is not known yet, remove temporary the other
+    # transceiver from your server and start the driver without the serial
+    # number setting; the serial number and devid will be presented in the
+    # debug logging.
     # USB transceiver Kat.Nr.: 30.3175  05/2014
     # serial = 010128031400117  # devid = 0x0075
 
@@ -1455,12 +1507,14 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     # Do not change this value if you don't know what you are doing!
     # timing = 300  # set a value (in ms) between 100 and 400
 
-    # The catchup mechanism will catchup history records to a maximum of limit_rec_read_to [0 .. 51200]
+    # The catchup mechanism will catchup history records to a maximum of
+    # limit_rec_read_to [0 .. 51200]
     # limit_rec_read_to = 3001
 
     # Sensor texts can have 1-10 upper-case alphanumeric characters;
-    #   other allowed characters: space - + ( ) * , . / \ and o (o = lower case O used as degree symbol)
-    # Note: You can't preset sensor texts for non-present sensors
+    #   other allowed characters: space - + ( ) * , . / \ and o
+    #   o is the lower case O used as degree symbol
+    # You cannot preset sensor texts for non-present sensors
     # Example for 5 sensors:
     # sensor_text1 = "5565 BED1"
     # sensor_text2 = "6DDF LAUN"
@@ -1468,94 +1522,93 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     # sensor_text4 = "52F4 BED2"
     # sensor_text5 = "67D7 BATH"
 
-    # The section below is for wview database mapping only; leave this section out for kl mapping
-    # -------------------------------------------------------------------------------------------
-    # You may change the wview sensor mapping by changing the values in the right
+    # The sensor_map associates sensor names with the database fields defined
+    # in the database schema.  The default mapping is for the wview schema.
+    #
+    # You may change the sensor mapping by changing the values in the right
     # column. Be sure you use valid weewx database field names; each field
     # name can be used only once.
     #
     # WARNING: Any change to the sensor mapping should be followed by clearing
     # of the database, otherwise data will be mixed up.
-    [[sensor_map]]
-        Temp0          = inTemp      # save base station temperature as inTemp
-        Humidity0      = inHumidity  # save base station humidity as inHumidity
-        Temp1          = outTemp     # save sensor 1 temperature as outTemp
-        Humidity1      = outHumidity # save sensor 1 humidity as outHumidity
-        Temp2          = extraTemp1
-        Humidity2      = extraHumid1
-        Temp3          = extraTemp2
-        Humidity3      = extraHumid2
-        Temp4          = extraTemp3
-        Humidity4      = leafWet1
-        Temp5          = soilTemp1
-        Humidity5      = soilMoist1
-        Temp6          = soilTemp2
-        Humidity6      = soilMoist2
-        Temp7          = soilTemp3
-        Humidity7      = soilMoist3
-        Temp8          = soilTemp4
-        Humidity8      = soilMoist4
-        RxCheckPercent = rxCheckPercent
-        BatteryStatus0 = consBatteryVoltage
-        BatteryStatus1 = txBatteryStatus
-        BatteryStatus2 = inTempBatteryStatus
-        BatteryStatus3 = outTempBatteryStatus
-        BatteryStatus4 = windBatteryStatus
-        BatteryStatus5 = rainBatteryStatus
-        BatteryStatus6 = supplyVoltage
-        BatteryStatus7 = referenceVoltage
-        BatteryStatus8 = heatingVoltage
+#    [[sensor_map]]
+#        Temp0          = inTemp      # save console temperature as inTemp
+#        Humidity0      = inHumidity  # save console humidity as inHumidity
+#        Temp1          = outTemp     # save sensor 1 temperature as outTemp
+#        Humidity1      = outHumidity # save sensor 1 humidity as outHumidity
+#        Temp2          = extraTemp1
+#        Humidity2      = extraHumid1
+#        Temp3          = extraTemp2
+#        Humidity3      = extraHumid2
+#        Temp4          = extraTemp3
+#        Humidity4      = leafWet1
+#        Temp5          = soilTemp1
+#        Humidity5      = soilMoist1
+#        Temp6          = soilTemp2
+#        Humidity6      = soilMoist2
+#        Temp7          = soilTemp3
+#        Humidity7      = soilMoist3
+#        Temp8          = soilTemp4
+#        Humidity8      = soilMoist4
+#        RxCheckPercent = rxCheckPercent
+#        BatteryStatus0 = consBatteryVoltage
+#        BatteryStatus1 = txBatteryStatus
+#        BatteryStatus2 = inTempBatteryStatus
+#        BatteryStatus3 = outTempBatteryStatus
+#        BatteryStatus4 = windBatteryStatus
+#        BatteryStatus5 = rainBatteryStatus
+#        BatteryStatus6 = supplyVoltage
+#        BatteryStatus7 = referenceVoltage
+#        BatteryStatus8 = heatingVoltage
 
-    # The section below is for klimalogg database mapping only; leave this section out for wview mapping
-    # -------------------------------------------------------------------------------------------
-    [ [sensor_map]]
-        Temp0          = temp0
-        Temp1          = temp1
-        Temp2          = temp2
-        Temp3          = temp3
-        Temp4          = temp4
-        Temp5          = temp5
-        Temp6          = temp6
-        Temp7          = temp7
-        Temp8          = temp8
-        Humidity0      = humidity0
-        Humidity1      = humidity1
-        Humidity2      = humidity2
-        Humidity3      = humidity3
-        Humidity4      = humidity4
-        Humidity5      = humidity5
-        Humidity6      = humidity6
-        Humidity7      = humidity7
-        Humidity8      = humidity8
-        Dewpoint0      = dewpoint0
-        Dewpoint1      = dewpoint1
-        Dewpoint2      = dewpoint2
-        Dewpoint3      = dewpoint3
-        Dewpoint4      = dewpoint4
-        Dewpoint5      = dewpoint5
-        Dewpoint6      = dewpoint6
-        Dewpoint7      = dewpoint7
-        Dewpoint8      = dewpoint8
-        Heatindex0     = heatindex0
-        Heatindex1     = heatindex1
-        Heatindex2     = heatindex2
-        Heatindex3     = heatindex3
-        Heatindex4     = heatindex4
-        Heatindex5     = heatindex5
-        Heatindex6     = heatindex6
-        Heatindex7     = heatindex7
-        Heatindex8     = heatindex8
-        RxCheckPercent = rxCheckPercent
-        BatteryStatus0 = batteryStatus0
-        BatteryStatus1 = batteryStatus1
-        BatteryStatus2 = batteryStatus2
-        BatteryStatus3 = batteryStatus3
-        BatteryStatus4 = batteryStatus4
-        BatteryStatus5 = batteryStatus5
-        BatteryStatus6 = batteryStatus6
-        BatteryStatus7 = batteryStatus7
-        BatteryStatus8 = batteryStatus8
-    # -------------------------------------------------------------------------------------------
+    # The section below is for klimalogg database mapping
+#    [[sensor_map]]
+#        Temp0          = temp0
+#        Temp1          = temp1
+#        Temp2          = temp2
+#        Temp3          = temp3
+#        Temp4          = temp4
+#        Temp5          = temp5
+#        Temp6          = temp6
+#        Temp7          = temp7
+#        Temp8          = temp8
+#        Humidity0      = humidity0
+#        Humidity1      = humidity1
+#        Humidity2      = humidity2
+#        Humidity3      = humidity3
+#        Humidity4      = humidity4
+#        Humidity5      = humidity5
+#        Humidity6      = humidity6
+#        Humidity7      = humidity7
+#        Humidity8      = humidity8
+#        Dewpoint0      = dewpoint0
+#        Dewpoint1      = dewpoint1
+#        Dewpoint2      = dewpoint2
+#        Dewpoint3      = dewpoint3
+#        Dewpoint4      = dewpoint4
+#        Dewpoint5      = dewpoint5
+#        Dewpoint6      = dewpoint6
+#        Dewpoint7      = dewpoint7
+#        Dewpoint8      = dewpoint8
+#        Heatindex0     = heatindex0
+#        Heatindex1     = heatindex1
+#        Heatindex2     = heatindex2
+#        Heatindex3     = heatindex3
+#        Heatindex4     = heatindex4
+#        Heatindex5     = heatindex5
+#        Heatindex6     = heatindex6
+#        Heatindex7     = heatindex7
+#        Heatindex8     = heatindex8
+#        RxCheckPercent = rxCheckPercent
+#        BatteryStatus0 = batteryStatus0
+#        BatteryStatus1 = batteryStatus1
+#        BatteryStatus2 = batteryStatus2
+#        BatteryStatus3 = batteryStatus3
+#        BatteryStatus4 = batteryStatus4
+#        BatteryStatus5 = batteryStatus5
+#        BatteryStatus6 = batteryStatus6
+#        BatteryStatus7 = batteryStatus7
+#        BatteryStatus8 = batteryStatus8
 """
 
     def prompt_for_settings(self):
@@ -1773,12 +1826,14 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         self.comm_interval = int(stn_dict.get('comm_interval', 8))
         self.frequency = stn_dict.get('transceiver_frequency', 'EU')
         self.config_serial = stn_dict.get('serial', None)
-        self.sensor_map = stn_dict.get('sensor_map', KL_SENSOR_MAP)
+        self.sensor_map = stn_dict.get('sensor_map', WVIEW_SENSOR_MAP)
 
         if self.sensor_map['Temp0'] == 'temp0':
             logdbg('database schema is kl-schema')
         else:
             logdbg('database schema is wview-schema')
+
+        configure_units()
 
         global LIMIT_REC_READ_TO
         LIMIT_REC_READ_TO = int(stn_dict.get('limit_rec_read_to', 3001))
