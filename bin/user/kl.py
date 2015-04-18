@@ -1476,9 +1476,11 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
 [KlimaLogg]
     # This section is for the TFA KlimaLogg series of weather stations.
 
-    # Radio frequency to use between USB transceiver and console: US or EU
-    # US uses 915 MHz, EU uses 868.3 MHz.  Default is EU.
-    transceiver_frequency = EU
+    # The station model, e.g., 'TFA KlimaLoggPro' or 'TFA KlimaLogg'
+    model = TFA KlimaLogg
+
+    # The driver to use:
+    driver = weewx.drivers.kl
 
     # The serial number will be used to choose the right Weather Display
     # Transceiver when more than one is present.  When the serial number
@@ -1487,40 +1489,38 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     # number setting; the serial number and devid will be presented in the
     # debug logging.
     # USB transceiver Kat.Nr.: 30.3175  05/2014
-    # serial = 010128031400117  # devid = 0x0075
+    #serial = 010128031400117  # devid = 0x0075
 
-    # The station model, e.g., 'TFA KlimaLoggPro' or 'TFA KlimaLogg'
-    model = TFA KlimaLogg
-
-    # The driver to use:
-    driver = weewx.drivers.kl
+    # Radio frequency to use between USB transceiver and console: US or EU
+    # US uses 915 MHz, EU uses 868.3 MHz.  Default is EU.
+    #transceiver_frequency = EU
 
     # debug flags:
     #  0=no logging; 1=minimum logging; 2=normal logging; 3=detailed logging
-    debug_comm = 2
-    debug_config_data = 2
-    debug_weather_data = 2
-    debug_history_data = 2
-    debug_dump_format = auto
+    #debug_comm = 0
+    #debug_config_data = 0
+    #debug_weather_data = 0
+    #debug_history_data = 0
+    #debug_dump_format = auto
 
     # The timing of history and weather messages is set by the timing parameter
     # Do not change this value if you don't know what you are doing!
-    # timing = 300  # set a value (in ms) between 100 and 400
+    #timing = 300  # set a value (in ms) between 100 and 400
 
     # The catchup mechanism will catchup history records to a maximum of
     # limit_rec_read_to [0 .. 51200]
-    # limit_rec_read_to = 3001
+    #limit_rec_read_to = 3001
 
     # Sensor texts can have 1-10 upper-case alphanumeric characters;
     #   other allowed characters: space - + ( ) * , . / \ and o
     #   o is the lower case O used as degree symbol
     # You cannot preset sensor texts for non-present sensors
     # Example for 5 sensors:
-    # sensor_text1 = "5565 BED1"
-    # sensor_text2 = "6DDF LAUN"
-    # sensor_text3 = "7131 FRID"
-    # sensor_text4 = "52F4 BED2"
-    # sensor_text5 = "67D7 BATH"
+    #sensor_text1 = "5565 BED1"
+    #sensor_text2 = "6DDF LAUN"
+    #sensor_text3 = "7131 FRID"
+    #sensor_text4 = "52F4 BED2"
+    #sensor_text5 = "67D7 BATH"
 
     # The sensor_map associates sensor names with the database fields defined
     # in the database schema.  The default mapping is for the wview schema.
@@ -1827,11 +1827,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         self.frequency = stn_dict.get('transceiver_frequency', 'EU')
         self.config_serial = stn_dict.get('serial', None)
         self.sensor_map = stn_dict.get('sensor_map', WVIEW_SENSOR_MAP)
-
-        if self.sensor_map['Temp0'] == 'temp0':
-            logdbg('database schema is kl-schema')
-        else:
-            logdbg('database schema is wview-schema')
+        logdbg("sensor_map is %s" % self.sensor_map)
 
         configure_units()
 
@@ -1850,13 +1846,13 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         self._empty_packet_count = 0
 
         global DEBUG_COMM
-        DEBUG_COMM = int(stn_dict.get('debug_comm', 1))
+        DEBUG_COMM = int(stn_dict.get('debug_comm', 0))
         global DEBUG_CONFIG_DATA
-        DEBUG_CONFIG_DATA = int(stn_dict.get('debug_config_data', 1))
+        DEBUG_CONFIG_DATA = int(stn_dict.get('debug_config_data', 0))
         global DEBUG_WEATHER_DATA
-        DEBUG_WEATHER_DATA = int(stn_dict.get('debug_weather_data', 1))
+        DEBUG_WEATHER_DATA = int(stn_dict.get('debug_weather_data', 0))
         global DEBUG_HISTORY_DATA
-        DEBUG_HISTORY_DATA = int(stn_dict.get('debug_history_data', 1))
+        DEBUG_HISTORY_DATA = int(stn_dict.get('debug_history_data', 0))
         global DEBUG_DUMP_FORMAT
         DEBUG_DUMP_FORMAT = stn_dict.get('debug_dump_format', 'auto')
 
