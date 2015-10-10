@@ -151,8 +151,8 @@ Response type:
 000:  00 00 07 DevID LI 10 SQ CfgCS xx xx xx xx xx xx xx xx xx  Time/Config written
 000:  00 00 7d DevID LI 20 SQ [ConfigData .. .. .. .. .. CfgCS] GetConfig
 000:  00 00 e5 DevID LI 30 SQ CfgCS [CurData .. .. .. .. .. ..  Current Weather
-000:  00 00 b5 DevID LI 40 SQ CfgCS LateAdr  ThisAdr  [HisData  Outstanding History
-000:  00 00 b5 DevID LI 40 SQ CfgCS LateAdr  ThisAdr  [HisData  Actual History
+000:  00 00 b5 DevID LI 40 SQ CfgCS LateAddr ThisAddr [HisData  Outstanding History
+000:  00 00 b5 DevID LI 40 SQ CfgCS LateAddr ThisAddr [HisData  Actual History
 000:  00 00 b5 DevID LI 50 MP CfgCS xx xx xx xx xx xx xx xx xx  Request Read History
 000:  00 00 07 f0 f0 ff 51 SQ CfgCS xx xx xx xx xx xx xx xx xx  Request FirstConfig
 000:  00 00 07 DevID LI 52 SQ CfgCS xx xx xx xx xx xx xx xx xx  Request SetConfig
@@ -175,9 +175,9 @@ Additional bytes all GetFrame messages except ReadConfig
 08-9:  Config checksum [CfgCS]
 
 Additional bytes Actual / Outstanding History:
-10-12: LatestHistoryAddress [LateAdr] 3 bytes (Latest to sent)
+10-12: LatestHistoryAddress [LateAddr] 3 bytes (Latest to sent)
        LatestHistoryRecord = (LatestHistoryAddress - 0x07000) / 32 
-13-15: ThisHistoryAddress   [ThisAdr] 3 bytes (Outstanding)
+13-15: ThisHistoryAddress   [ThisAddr] 3 bytes (Outstanding)
        ThisHistoryRecord = (ThisHistoryAddress - 0x070000) / 32
 
 Additional bytes ReadConfig and WriteConfig
@@ -214,12 +214,12 @@ Action:
 20: Send Config      - Send Config to WS
 60: Send Time        - Send Time to WS (works only if station is just initialized)
 
-000:  d5 00 0b DevID LI 00 CfgCS 8ComInt ThisAdr xx xx xx  rtGetHistory
-000:  d5 00 0b DevID LI 01 CfgCS 8ComInt ThisAdr xx xx xx  rtReqSetTime
-000:  d5 00 0b f0 f0 ff 02 ff ff 8ComInt ThisAdr xx xx xx  rtReqFirstConfig
-000:  d5 00 0b DevID LI 02 CfgCS 8ComInt ThisAdr xx xx xx  rtReqSetConfig
-000:  d5 00 0b DevID LI 03 CfgCS 8ComInt ThisAdr xx xx xx  rtGetConfig
-000:  d5 00 0b DevID LI 04 CfgCS 8ComInt ThisAdr xx xx xx  rtGetCurrent
+000:  d5 00 0b DevID LI 00 CfgCS 8cINT ThisAddr xx xx xx  rtGetHistory
+000:  d5 00 0b DevID LI 01 CfgCS 8cINT ThisAddr xx xx xx  rtReqSetTime
+000:  d5 00 0b DevID LI 02 CfgCS 8cINT ThisAddr xx xx xx  rtReqSetConfig
+000:  d5 00 0b f0 f0 ff 03 ff ff 8cINT DevID LI xx xx xx  rtReqFirstConfig
+000:  d5 00 0b DevID LI 03 CfgCS 8cINT ThisAddr xx xx xx  rtGetConfig
+000:  d5 00 0b DevID LI 04 CfgCS 8cINT ThisAddr xx xx xx  rtGetCurrent
 000:  d5 00 7d DevID LI 20 [ConfigData  .. .. .. .. CfgCS] Send Config
 000:  d5 00 0d DevID LI 60 CfgCS [TimeData .. .. .. .. ..  Send Time
 
@@ -235,7 +235,7 @@ All SetFrame messages:
 Additional bytes rtGetCurrent, rtGetHistory, rtSetTime messages:
 09hi:    0x80               (meaning unknown, 0.5 byte)
 09lo-10: ComInt             [cINT]    1.5 byte
-11-13:   ThisHistoryAddress [ThisAdr] 3 bytes (high byte first)
+11-13:   ThisHistoryAddress [ThisAddr] 3 bytes (high byte first)
 
 Additional bytes Send Time message:
 09:    seconds
@@ -1184,8 +1184,10 @@ import weewx.drivers
 import weewx.wxformulas
 import weeutil.weeutil
 
+from weewx.units import obs_group_dict
+
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.1'
+DRIVER_VERSION = '1.1.1'
 
 
 def loader(config_dict, _):
@@ -1273,7 +1275,7 @@ KL_SENSOR_MAP = {
 }
 
 
-# klimalogg schema to use in place of the default wview schema
+# kl schema (user/klschema.py) to use in place of the wview schema (schemas/wview.py)
 schema = [('dateTime',             'INTEGER NOT NULL UNIQUE PRIMARY KEY'),
           ('usUnits',              'INTEGER NOT NULL'),
           ('interval',             'INTEGER NOT NULL'),
@@ -1418,56 +1420,6 @@ def print_dict(data):
             print '%s: %s' % (x, data[x])
 
 
-# ensure that units are properly defined for the observations from the kl
-def configure_units():
-    import weewx.units
-    weewx.units.obs_group_dict['leafWet1'] = 'group_percent'
-    weewx.units.obs_group_dict['soilMoist1'] = 'group_percent'
-    weewx.units.obs_group_dict['soilMoist2'] = 'group_percent'
-    weewx.units.obs_group_dict['soilMoist3'] = 'group_percent'
-    weewx.units.obs_group_dict['soilMoist4'] = 'group_percent'
-
-    weewx.units.obs_group_dict['temp0'] = 'group_temperature'
-    weewx.units.obs_group_dict['temp1'] = 'group_temperature'
-    weewx.units.obs_group_dict['temp2'] = 'group_temperature'
-    weewx.units.obs_group_dict['temp3'] = 'group_temperature'
-    weewx.units.obs_group_dict['temp4'] = 'group_temperature'
-    weewx.units.obs_group_dict['temp5'] = 'group_temperature'
-    weewx.units.obs_group_dict['temp6'] = 'group_temperature'
-    weewx.units.obs_group_dict['temp7'] = 'group_temperature'
-    weewx.units.obs_group_dict['temp8'] = 'group_temperature'
-
-    weewx.units.obs_group_dict['humidity0'] = 'group_percent'
-    weewx.units.obs_group_dict['humidity1'] = 'group_percent'
-    weewx.units.obs_group_dict['humidity2'] = 'group_percent'
-    weewx.units.obs_group_dict['humidity3'] = 'group_percent'
-    weewx.units.obs_group_dict['humidity4'] = 'group_percent'
-    weewx.units.obs_group_dict['humidity5'] = 'group_percent'
-    weewx.units.obs_group_dict['humidity6'] = 'group_percent'
-    weewx.units.obs_group_dict['humidity7'] = 'group_percent'
-    weewx.units.obs_group_dict['humidity8'] = 'group_percent'
-
-    weewx.units.obs_group_dict['dewpoint0'] = 'group_temperature'
-    weewx.units.obs_group_dict['dewpoint1'] = 'group_temperature'
-    weewx.units.obs_group_dict['dewpoint2'] = 'group_temperature'
-    weewx.units.obs_group_dict['dewpoint3'] = 'group_temperature'
-    weewx.units.obs_group_dict['dewpoint4'] = 'group_temperature'
-    weewx.units.obs_group_dict['dewpoint5'] = 'group_temperature'
-    weewx.units.obs_group_dict['dewpoint6'] = 'group_temperature'
-    weewx.units.obs_group_dict['dewpoint7'] = 'group_temperature'
-    weewx.units.obs_group_dict['dewpoint8'] = 'group_temperature'
-
-    weewx.units.obs_group_dict['heatindex0'] = 'group_temperature'
-    weewx.units.obs_group_dict['heatindex1'] = 'group_temperature'
-    weewx.units.obs_group_dict['heatindex2'] = 'group_temperature'
-    weewx.units.obs_group_dict['heatindex3'] = 'group_temperature'
-    weewx.units.obs_group_dict['heatindex4'] = 'group_temperature'
-    weewx.units.obs_group_dict['heatindex5'] = 'group_temperature'
-    weewx.units.obs_group_dict['heatindex6'] = 'group_temperature'
-    weewx.units.obs_group_dict['heatindex7'] = 'group_temperature'
-    weewx.units.obs_group_dict['heatindex8'] = 'group_temperature'
-
-
 class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     @property
     def default_stanza(self):
@@ -1476,139 +1428,55 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
 [KlimaLogg]
     # This section is for the TFA KlimaLogg series of weather stations.
 
+    # Radio frequency to use between USB transceiver and console: US or EU
+    # US uses 915 MHz, EU uses 868.3 MHz.  Default is EU.
+    transceiver_frequency = EU
+
     # The station model, e.g., 'TFA KlimaLoggPro' or 'TFA KlimaLogg'
     model = TFA KlimaLogg
 
     # The driver to use:
-    driver = weewx.drivers.kl
-
-    # The serial number will be used to choose the right Weather Display
-    # Transceiver when more than one is present.  When the serial number
-    # of a transceiver is not known yet, remove temporary the other
-    # transceiver from your server and start the driver without the serial
-    # number setting; the serial number and devid will be presented in the
-    # debug logging.
-    # USB transceiver Kat.Nr.: 30.3175  05/2014
-    #serial = 010128031400117  # devid = 0x0075
-
-    # Radio frequency to use between USB transceiver and console: US or EU
-    # US uses 915 MHz, EU uses 868.3 MHz.  Default is EU.
-    #transceiver_frequency = EU
+    driver = user.kl
 
     # debug flags:
     #  0=no logging; 1=minimum logging; 2=normal logging; 3=detailed logging
-    #debug_comm = 0
-    #debug_config_data = 0
-    #debug_weather_data = 0
-    #debug_history_data = 0
-    #debug_dump_format = auto
+    # Don't forget to set debug flags to 0 when finished testing!
+    debug_comm = 0
+    debug_config_data = 1
+    debug_weather_data = 1
+    debug_history_data = 1
+    debug_dump_format = auto
 
-    # The timing of history and weather messages is set by the timing parameter
-    # Do not change this value if you don't know what you are doing!
-    #timing = 300  # set a value (in ms) between 100 and 400
+    # The serial number will be used to choose the right Weather Display Transceiver when more than one is present.
+    # TIP: when the serial number of a transceiver is not known yet, remove temporary the other transceiver from
+    # your server and start the driver without the serial number setting; the serial number and devid will be
+    # presented in the debug logging.
+    # USB transceiver Kat.Nr.: 30.3175  05/2014
+    # serial = 010128031400117  # devid = 0x0075
 
-    # The catchup mechanism will catchup history records to a maximum of
-    # limit_rec_read_to [0 .. 51200]
-    #limit_rec_read_to = 3001
+    # logger_channel = 1
+    # polling_interval = 10
+    # comm_interval = 8
+
+    # The catchup mechanism will catchup history records to a maximum of limit_rec_read_to [0 .. 51200]
+    # limit_rec_read_to = 300 #range [0..51200]
 
     # Sensor texts can have 1-10 upper-case alphanumeric characters;
-    #   other allowed characters: space - + ( ) * , . / \ and o
-    #   o is the lower case O used as degree symbol
-    # You cannot preset sensor texts for non-present sensors
-    # Example for 5 sensors:
-    #sensor_text1 = "5565 BED1"
-    #sensor_text2 = "6DDF LAUN"
-    #sensor_text3 = "7131 FRID"
-    #sensor_text4 = "52F4 BED2"
-    #sensor_text5 = "67D7 BATH"
+    #   other allowed characters: space - + ( ) * , . / \ and o (o = lower case O used as degree symbol)
+    # Note: You can't preset sensor texts for non-present sensors
+    # Example preset of sensor texts:
+    # sensor_text1 = "5565 BED1"
+    # sensor_text2 = "6DDF LAUN"
+    # sensor_text3 = "7131 FRID"
+    # sensor_text4 = "52F4 KID1"
+    # sensor_text5 = "67D7 BATH"
+    # sensor_text6 = "3731 KID2"
+    # sensor_text7 = "76F4 STUD"
+    # sensor_text8 = "25D7 GARA"
 
-    # The sensor_map associates sensor names with the database fields defined
-    # in the database schema.  The default mapping is for the wview schema.
-    #
-    # You may change the sensor mapping by changing the values in the right
-    # column. Be sure you use valid weewx database field names; each field
-    # name can be used only once.
-    #
-    # WARNING: Any change to the sensor mapping should be followed by clearing
-    # of the database, otherwise data will be mixed up.
-#    [[sensor_map]]
-#        Temp0          = inTemp      # save console temperature as inTemp
-#        Humidity0      = inHumidity  # save console humidity as inHumidity
-#        Temp1          = outTemp     # save sensor 1 temperature as outTemp
-#        Humidity1      = outHumidity # save sensor 1 humidity as outHumidity
-#        Temp2          = extraTemp1
-#        Humidity2      = extraHumid1
-#        Temp3          = extraTemp2
-#        Humidity3      = extraHumid2
-#        Temp4          = extraTemp3
-#        Humidity4      = leafWet1
-#        Temp5          = soilTemp1
-#        Humidity5      = soilMoist1
-#        Temp6          = soilTemp2
-#        Humidity6      = soilMoist2
-#        Temp7          = soilTemp3
-#        Humidity7      = soilMoist3
-#        Temp8          = soilTemp4
-#        Humidity8      = soilMoist4
-#        RxCheckPercent = rxCheckPercent
-#        BatteryStatus0 = consBatteryVoltage
-#        BatteryStatus1 = txBatteryStatus
-#        BatteryStatus2 = inTempBatteryStatus
-#        BatteryStatus3 = outTempBatteryStatus
-#        BatteryStatus4 = windBatteryStatus
-#        BatteryStatus5 = rainBatteryStatus
-#        BatteryStatus6 = supplyVoltage
-#        BatteryStatus7 = referenceVoltage
-#        BatteryStatus8 = heatingVoltage
+    # Preset sensor_map_id
+    sensor_map_id = 0 #  0 = KL_SENSOR_MAP, 1 = WVIEW_SENSOR_MAP
 
-    # The section below is for klimalogg database mapping
-#    [[sensor_map]]
-#        Temp0          = temp0
-#        Temp1          = temp1
-#        Temp2          = temp2
-#        Temp3          = temp3
-#        Temp4          = temp4
-#        Temp5          = temp5
-#        Temp6          = temp6
-#        Temp7          = temp7
-#        Temp8          = temp8
-#        Humidity0      = humidity0
-#        Humidity1      = humidity1
-#        Humidity2      = humidity2
-#        Humidity3      = humidity3
-#        Humidity4      = humidity4
-#        Humidity5      = humidity5
-#        Humidity6      = humidity6
-#        Humidity7      = humidity7
-#        Humidity8      = humidity8
-#        Dewpoint0      = dewpoint0
-#        Dewpoint1      = dewpoint1
-#        Dewpoint2      = dewpoint2
-#        Dewpoint3      = dewpoint3
-#        Dewpoint4      = dewpoint4
-#        Dewpoint5      = dewpoint5
-#        Dewpoint6      = dewpoint6
-#        Dewpoint7      = dewpoint7
-#        Dewpoint8      = dewpoint8
-#        Heatindex0     = heatindex0
-#        Heatindex1     = heatindex1
-#        Heatindex2     = heatindex2
-#        Heatindex3     = heatindex3
-#        Heatindex4     = heatindex4
-#        Heatindex5     = heatindex5
-#        Heatindex6     = heatindex6
-#        Heatindex7     = heatindex7
-#        Heatindex8     = heatindex8
-#        RxCheckPercent = rxCheckPercent
-#        BatteryStatus0 = batteryStatus0
-#        BatteryStatus1 = batteryStatus1
-#        BatteryStatus2 = batteryStatus2
-#        BatteryStatus3 = batteryStatus3
-#        BatteryStatus4 = batteryStatus4
-#        BatteryStatus5 = batteryStatus5
-#        BatteryStatus6 = batteryStatus6
-#        BatteryStatus7 = batteryStatus7
-#        BatteryStatus8 = batteryStatus8
 """
 
     def prompt_for_settings(self):
@@ -1826,13 +1694,20 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         self.comm_interval = int(stn_dict.get('comm_interval', 8))
         self.frequency = stn_dict.get('transceiver_frequency', 'EU')
         self.config_serial = stn_dict.get('serial', None)
-        self.sensor_map = stn_dict.get('sensor_map', WVIEW_SENSOR_MAP)
-        logdbg("sensor_map is %s" % self.sensor_map)
+        self.logger_channel = int(stn_dict.get('logger_channel', 1))
+        self.sensor_map_id = int(stn_dict.get('sensor_map_id', 0))
+        if self.sensor_map_id == 0:
+            self.sensor_map = KL_SENSOR_MAP
+        else:
+            self.sensor_map = WVIEW_SENSOR_MAP
 
-        configure_units()
+        if self.sensor_map['Temp0'] == 'temp0':
+            logdbg('database schema is kl-schema')
+        else:
+            logdbg('database schema is wview-schema')
 
         global LIMIT_REC_READ_TO
-        LIMIT_REC_READ_TO = int(stn_dict.get('limit_rec_read_to', 3001))
+        LIMIT_REC_READ_TO = int(stn_dict.get('limit_rec_read_to', 300))
 
         now = int(time.time())
         self._service = None
@@ -1848,11 +1723,11 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         global DEBUG_COMM
         DEBUG_COMM = int(stn_dict.get('debug_comm', 0))
         global DEBUG_CONFIG_DATA
-        DEBUG_CONFIG_DATA = int(stn_dict.get('debug_config_data', 0))
+        DEBUG_CONFIG_DATA = int(stn_dict.get('debug_config_data', 1))
         global DEBUG_WEATHER_DATA
-        DEBUG_WEATHER_DATA = int(stn_dict.get('debug_weather_data', 0))
+        DEBUG_WEATHER_DATA = int(stn_dict.get('debug_weather_data', 1))
         global DEBUG_HISTORY_DATA
-        DEBUG_HISTORY_DATA = int(stn_dict.get('debug_history_data', 0))
+        DEBUG_HISTORY_DATA = int(stn_dict.get('debug_history_data', 1))
         global DEBUG_DUMP_FORMAT
         DEBUG_DUMP_FORMAT = stn_dict.get('debug_dump_format', 'auto')
 
@@ -1867,6 +1742,10 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         loginf('frequency is %s' % self.frequency)
         loginf('timing is %s ms (%0.3f s)' % (timing, self.first_sleep))
 
+        if self.sensor_map_id == 0:
+            self.setup_units_klview()
+        else:
+            self.setup_units_wview()
         self.startUp()
 
     @property
@@ -2003,7 +1882,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         if self._service is not None:
             return
         self._service = CommunicationService(self.first_sleep, self.values)
-        self._service.setup(self.frequency, self.comm_interval,
+        self._service.setup(self.frequency, self.comm_interval, self.logger_channel,
                             self.vendor_id, self.product_id, self.config_serial)
         self._service.startRFThread()
 
@@ -2026,6 +1905,68 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
 
     def get_last_contact(self):
         return self._service.getLastStat().last_seen_ts
+
+    @staticmethod
+    def setup_units_klview():
+        obs_group_dict['temp0'] = 'group_temperature'
+        obs_group_dict['temp1'] = 'group_temperature'
+        obs_group_dict['temp2'] = 'group_temperature'
+        obs_group_dict['temp3'] = 'group_temperature'
+        obs_group_dict['temp4'] = 'group_temperature'
+        obs_group_dict['temp5'] = 'group_temperature'
+        obs_group_dict['temp6'] = 'group_temperature'
+        obs_group_dict['temp7'] = 'group_temperature'
+        obs_group_dict['temp8'] = 'group_temperature'
+        obs_group_dict['humidity0'] = 'group_percent'
+        obs_group_dict['humidity1'] = 'group_percent'
+        obs_group_dict['humidity2'] = 'group_percent'
+        obs_group_dict['humidity3'] = 'group_percent'
+        obs_group_dict['humidity4'] = 'group_percent'
+        obs_group_dict['humidity5'] = 'group_percent'
+        obs_group_dict['humidity6'] = 'group_percent'
+        obs_group_dict['humidity7'] = 'group_percent'
+        obs_group_dict['humidity8'] = 'group_percent'
+        obs_group_dict['dewpoint0'] = 'group_temperature'
+        obs_group_dict['dewpoint1'] = 'group_temperature'
+        obs_group_dict['dewpoint2'] = 'group_temperature'
+        obs_group_dict['dewpoint3'] = 'group_temperature'
+        obs_group_dict['dewpoint4'] = 'group_temperature'
+        obs_group_dict['dewpoint5'] = 'group_temperature'
+        obs_group_dict['dewpoint6'] = 'group_temperature'
+        obs_group_dict['dewpoint7'] = 'group_temperature'
+        obs_group_dict['dewpoint8'] = 'group_temperature'
+        obs_group_dict['heatindex0'] = 'group_temperature'
+        obs_group_dict['heatindex1'] = 'group_temperature'
+        obs_group_dict['heatindex2'] = 'group_temperature'
+        obs_group_dict['heatindex3'] = 'group_temperature'
+        obs_group_dict['heatindex4'] = 'group_temperature'
+        obs_group_dict['heatindex5'] = 'group_temperature'
+        obs_group_dict['heatindex6'] = 'group_temperature'
+        obs_group_dict['heatindex7'] = 'group_temperature'
+        obs_group_dict['heatindex8'] = 'group_temperature'
+        obs_group_dict['rxCheckPercent'] = 'group_percent'
+        obs_group_dict['batteryStatus0'] = 'group_volt'
+        obs_group_dict['batteryStatus1'] = 'group_volt'
+        obs_group_dict['batteryStatus2'] = 'group_volt'
+        obs_group_dict['batteryStatus3'] = 'group_volt'
+        obs_group_dict['batteryStatus4'] = 'group_volt'
+        obs_group_dict['batteryStatus5'] = 'group_volt'
+        obs_group_dict['batteryStatus6'] = 'group_volt'
+        obs_group_dict['batteryStatus7'] = 'group_volt'
+        obs_group_dict['batteryStatus8'] = 'group_volt'
+
+    @staticmethod
+    def setup_units_wview():
+        obs_group_dict['leafWet1'] = 'group_percent'
+        obs_group_dict['soilMoist1'] = 'group_percent'
+        obs_group_dict['soilMoist2'] = 'group_percent'
+        obs_group_dict['soilMoist3'] = 'group_percent'
+        obs_group_dict['soilMoist4'] = 'group_percent'
+        obs_group_dict['txBatteryStatus'] = 'group_volt'
+        obs_group_dict['inTempBatteryStatus'] = 'group_volt'
+        obs_group_dict['outTempBatteryStatus'] = 'group_volt'
+        obs_group_dict['windBatteryStatus'] = 'group_volt'
+        obs_group_dict['rainBatteryStatus'] = 'group_volt'
 
     SENSOR_KEYS = ['Temp0', 'Humidity0',
                    'Temp1', 'Humidity1',
@@ -2173,17 +2114,6 @@ history_intervals = {
     HI_03STD: 180,
     HI_06STD: 360,
     }
-
-LOGGER_1 = 0
-LOGGER_2 = 1
-LOGGER_3 = 2
-LOGGER_4 = 3
-LOGGER_5 = 4
-LOGGER_6 = 5
-LOGGER_7 = 6
-LOGGER_8 = 7
-LOGGER_9 = 8
-LOGGER_10 = 9
 
 # frequency standards and their associated transmission frequencies
 frequencies = {
@@ -3408,6 +3338,7 @@ class CommunicationService(object):
         self.current = CurrentData()
         self.comm_mode_interval = 8
         self.config_serial = None  # the serial number given in weewx.conf
+        self.logger_id = 0 # the default logger id
         self.transceiver_present = False
         self.registered_device_id = None
 
@@ -3451,7 +3382,7 @@ class CommunicationService(object):
             newbuf = [0] * newlen
             newbuf[0] = buf[0]
             newbuf[1] = buf[1]
-            newbuf[2] = LOGGER_1
+            newbuf[2] = buf[2]
             newbuf[3] = ACTION_SEND_CONFIG # 0x20 # change this value if we won't store config
             newbuf[4] = buf[4]
             for i in xrange(5, newlen):
@@ -3475,7 +3406,7 @@ class CommunicationService(object):
         newbuf = [0] * newlen
         newbuf[0] = buf[0]
         newbuf[1] = buf[1]
-        newbuf[2] = LOGGER_1
+        newbuf[2] = buf[2]
         newbuf[3] = ACTION_SEND_TIME  # 0x60
         newbuf[4] = (cs >> 8) & 0xFF
         newbuf[5] = (cs >> 0) & 0xFF
@@ -3513,13 +3444,20 @@ class CommunicationService(object):
                            ' from %d to 5 (age=%s)' % (action, age))
                 action = ACTION_GET_CURRENT
 
-        if hidx is None:
-            if self.last_stat.latest_history_index is not None:
-                hidx = self.last_stat.latest_history_index
-        if hidx is None or hidx < 0 or hidx >= KlimaLoggDriver.max_records:
-            haddr = 0xffffff
+        if hidx == 0xFFFF:
+            # At first config preset the address with DeviceId and logger_id
+            haddr = (self.getDeviceID() << 8) + self.logger_id
+            logdbg('buildACKFrame: first config haddr preset to deviceID and logger_id 0x%06x' % haddr)
         else:
-            haddr = index_to_addr(hidx)
+            if hidx is None:
+                if self.last_stat.latest_history_index is not None:
+                    hidx = self.last_stat.latest_history_index
+            if hidx is None or hidx < 0 or hidx >= KlimaLoggDriver.max_records:
+                # If no hidx is present yet, preset haddr with 0xffffff
+                haddr = 0xFFFFFF
+                logdbg('buildACKFrame: no known haddr; preset with 0x%06x' % haddr)
+            else:
+                haddr = index_to_addr(hidx)
         if DEBUG_COMM > 1:
             logdbg('buildACKFrame: idx: %s addr: 0x%04x' % (hidx, haddr))
 
@@ -3529,7 +3467,7 @@ class CommunicationService(object):
         newbuf = [0] * newlen
         newbuf[0] = buf[0]
         newbuf[1] = buf[1]
-        newbuf[2] = LOGGER_1
+        newbuf[2] = buf[2]
         newbuf[3] = action & 0xF
         newbuf[4] = (cs >> 8) & 0xFF
         newbuf[5] = (cs >> 0) & 0xFF
@@ -3556,7 +3494,7 @@ class CommunicationService(object):
         return self.buildACKFrame(buf, ACTION_GET_HISTORY, cs)
 
     def handleCurrentData(self, length, buf):
-        if DEBUG_WEATHER_DATA > 0:
+        if DEBUG_WEATHER_DATA > 1:
             logdbg('handleCurrentData: %s' % self.timing())
 
         now = int(time.time())
@@ -3614,7 +3552,7 @@ class CommunicationService(object):
     TS_2010_07 = tstr_to_ts(str(datetime(2010, 07, 01, 00, 00)))
 
     def handleHistoryData(self, length, buf):
-        if DEBUG_HISTORY_DATA > 0:
+        if DEBUG_HISTORY_DATA > 1:
             logdbg('handleHistoryData: %s' % self.timing())
 
         now = int(time.time())
@@ -3710,9 +3648,10 @@ class CommunicationService(object):
                         loginf('handleHistoryData: no start date known (empty database), use number stored (%d)' % nrec)
                         nreq = nrec
                 # Workaround for nrec up to 50,000; limit this number to limit_rec_read
+                logdbg('nreq=%s' % nreq)
                 if nreq > LIMIT_REC_READ_TO:
                     nreq = LIMIT_REC_READ_TO
-                    logdbg('Number of history records to catch up limited to: %s' % nreq)
+                    loginf('Number of history records to catch up limited to: %s' % nreq)
                 if nreq >= KlimaLoggDriver.max_records:
                     nrec = KlimaLoggDriver.max_records-1
                 idx = get_index(latestIndex - nreq)
@@ -3759,7 +3698,8 @@ class CommunicationService(object):
                                     self.records_skipped += 1
                                 # Check if two records in a row with the same ts
                                 elif tsCurrentRec == self.ts_last_rec:
-                                    logdbg('handleHistoryData: skipped record at Pos%d tsCurrentRec=%s DT is the same' %
+                                    if DEBUG_HISTORY_DATA > 1:
+                                        logdbg('handleHistoryData: skipped record at Pos%d tsCurrentRec=%s DT is the same' %
                                            (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
                                     self.records_skipped += 1
                                 # Check if this record elder than previous good record
@@ -3792,12 +3732,12 @@ class CommunicationService(object):
                                 self.records_skipped += 1
                         self.history_cache.next_index = thisIndex
                 else:
-                    loginf('handleHistoryData: index mismatch: indexRequested: %s, thisIndex: %s' %
+                    logdbg('handleHistoryData: index mismatch: indexRequested: %s, thisIndex: %s' %
                            (indexRequested, thisIndex))
                 nextIndex = self.history_cache.next_index
             self.history_cache.num_scanned += 1
             self.history_cache.num_outstanding_records = nrec
-            logdbg('handleHistoryData: records appended=%s, records skipped=%s, next=%s' %
+            loginf('handleHistoryData: records appended=%s, records skipped=%s, next=%s' %
                    (self.records_appended, self.records_skipped, nextIndex))
 
         self.setSleep(self.first_sleep, 0.010)
@@ -3840,17 +3780,18 @@ class CommunicationService(object):
             raise BadResponse('zero length buffer')
 
         bufferID = (buf[0] << 8) | buf[1]
+        loggerID = buf[2]
         respType = (buf[3] & 0xF0)
         if DEBUG_COMM > 1:
             logdbg("generateResponse: id=%04x resp=%x length=%x" %
                    (bufferID, respType, length))
         deviceID = self.getDeviceID()
 
-        if bufferID == 0xF0F0:
+        if bufferID == 0xF0F0 or bufferID == 0xFFFF:
             loginf('generateResponse: console not paired (synchronized), attempting to pair to 0x%04x' % deviceID)
-            newlen, newbuf = self.buildACKFrame(buf, ACTION_GET_CONFIG, deviceID, 0xFFFF)
+            newlen, newbuf = self.buildACKFrame(buf, ACTION_GET_CONFIG, 0xFFFF, 0xFFFF)
         elif bufferID == deviceID:
-            self.set_registered_device_id(bufferID)  # the station and transceiver are paired now
+            self.set_registered_device_id(bufferID, loggerID)  # the station and transceiver are paired now
             if respType == RESPONSE_DATA_WRITTEN:
                 if length == 0x07:  # 7
                     self.hid.setRX()
@@ -3881,18 +3822,9 @@ class CommunicationService(object):
             else:
                 raise BadResponse('unexpected response type %x' % respType)
         else:
-            # Note: the following code is meant for a ws28xx model weather station used together with a KlimaLogg Pro
-            # or two ws28xx model weather stations or two klimalogg pro stations working together
-            # We don't want to intercept any non-current weather message of the other station twice to avoid a stall
-            # of the other stattions communication, so we wait 400 ms to let the other station read the message.
-            # When no second transceiver is present (and thus no serial is given in weewx.conf) we don't come here
-            if self.config_serial is not None and (
-                    length == 0x7d or length == 0xb5 or length == 0x07 or
-                    length == 0x30 or length == 0x1e or length == 0x06):
-                logerr('generateResponse: intercepted message from device %04x with length: %02x; wait 400 ms' % (bufferID, length))
-                self.setSleep(0.400, 0.010)
-            else:
-                self.setSleep(0.075, 0.005)
+            if self.config_serial is None:
+                logerr('generateResponse: intercepted message from device %04x with length: %02x' % (bufferID, length))
+            self.setSleep(0.200, 0.005)
             raise UnknownDeviceId('unexpected device ID (id=%04x)' % bufferID)
         return newlen, newbuf
 
@@ -3993,9 +3925,11 @@ class CommunicationService(object):
             self.hid.writeReg(r, self.reg_names[r])
 
     def setup(self, frequency_standard, comm_interval,
-              vendor_id, product_id, serial):
+              logger_channel, vendor_id, product_id, serial):
         loginf("comm_interval is %s" % comm_interval)
+        loginf("logger_channel is %s" % logger_channel)
         self.comm_mode_interval = comm_interval
+        self.logger_id = logger_channel - 1
         self.config_serial = serial  # the serial number given in weewx.conf
         self.hid.open(vendor_id, product_id, serial)
         self.initTransceiver(frequency_standard)
@@ -4008,9 +3942,9 @@ class CommunicationService(object):
     def getTransceiverPresent(self):
         return self.transceiver_present
 
-    def set_registered_device_id(self, val):
+    def set_registered_device_id(self, val, logger_id):
         if val != self.registered_device_id:
-            loginf("console is paired (synchronized) to device with ID %04x" % val)
+            loginf("console is paired (synchronized) to device with ID %04x and logger channel %s" % (val, logger_id+1))
         self.registered_device_id = val
 
     def getDeviceRegistered(self):
@@ -4102,7 +4036,8 @@ class CommunicationService(object):
             # wait for genStartupRecords to start
             while self.history_cache.wait_at_start == 1:
                 time.sleep(1)
-            logdbg("starting rf communication; press USB button shortly if communication won't start")
+            loginf("starting rf communication; press USB button shortly if communication won't start")
+            loginf("To pair (synchronize) and preset a logger channel, press USB button until the unit beeps; then (re)start weewx immediately")
             while self.running:
                 self.doRFCommunication()
         except Exception, e:

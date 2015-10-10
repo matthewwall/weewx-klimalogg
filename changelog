@@ -1,3 +1,6 @@
+1.1.2 09oct2015
+* use luc's 1.1.1 package, plus packaging fixes
+
 1.1 16jun2015
 * display graphs only when data exist
 * added cursor when mouseover buttons
