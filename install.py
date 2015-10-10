@@ -16,15 +16,23 @@ class KlimaLoggInstaller(ExtensionInstaller):
             author="Luc Heijst",
             author_email="ljm.heijst@gmail.com",
             config={
+                'StdArchive': {
+                    'data_binding': 'kl_binding'},
                 'StdReport': {
+                    'data_binding': 'kl_binding',
                     'Klimalogg': {
                         'skin': 'kl',
                         'HTML_ROOT': 'kl'}},
                 'DataBindings': {
-                    'REPLACE-wx_binding': {
-                        'database': 'archive_sqlite',
+                    'kl_binding': {
+                        'database': 'kl_archive_sqlite',
                         'table_name': 'archive',
-                        'schema': 'user.kl.schema'}}},
+                        'manager': 'weewx.wxmanager.WXDaySummaryManager',
+                        'schema': 'user.kl.schema'}},
+                'Databases': {
+                    'kl_archive_sqlite': {
+                        'database_name': 'kl.sdb',
+                        'database_type': 'SQLite'}}},
             files=[('bin/user',
                     ['bin/user/kl.py']),
                    ('skins/kl',

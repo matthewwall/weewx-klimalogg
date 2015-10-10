@@ -23,23 +23,13 @@ Installation instructions:
 
 4) modify weewx.conf
 
-4a) Remove the [[StandardReport]] section.  The KlimaLogg is not a 'standard'
-    weather station, so the graphs and reports in skin Standard doesn't make
-    sense.
+4a) Remove the [[StandardReport]] section.  Either remove it completely, or
+    comment the section.  The KlimaLogg is not a 'standard' weather station,
+    so the graphs and reports in skin Standard will not work properly.
 
-4b) Klimalogg has more sensors than a 'standard' weather station and works
-    best with its own database schema.  So replace the wview schema with the
-    kl schema in the [wx-binding] section.  Replace this:
+4b) Optionally remove the [Simulator] driver section; it is no longer needed.
 
-        schema = schemas.wview.schema
-
-    with this:
-
-        schema = user.kl.schema
-
-4c) Optionally remove the [Simulator] driver section; it is no longer needed.
-
-6) restart weewx:
+5) restart weewx:
 
 sudo /etc/init.d/weewx stop
 sudo /etc/init.d/weewx start
