@@ -8,7 +8,7 @@
     <!-- skin for klimalogg - Copyright 2015 Matthew Wall -->
     #if $encoding == 'utf8'
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    #end if 
+    #end if
     <title>$station.location</title>
     <style>
 body {
@@ -126,7 +126,6 @@ a:visited {
   padding-bottom: 2px;
   background-color: $Extras.BG_COLOR;
   border: 1px solid $Extras.VISITED_COLOR;
-  cursor: pointer;
 }
 .period_selected {
   padding-left: 25px;
@@ -135,7 +134,6 @@ a:visited {
   padding-bottom: 2px;
   background-color: $Extras.HOVER_BG_COLOR;
   border: 1px solid $Extras.VISITED_COLOR;
-  cursor: pointer;
 }
     </style>
     <script>
@@ -200,6 +198,7 @@ function choose(id) {
   <tr>
     <td></td>
     <td class="table_heading">TODAY</td>
+	<td class="table_heading">WEEK</td>
     <td class="table_heading">MONTH</td>
     <td class="table_heading">YEAR</td>
     <td></td>
@@ -207,402 +206,73 @@ function choose(id) {
   ##
   ## kl-schema ##
   ##
-  #if $day.temp0.has_data
+
+#for t in [ ($day.temp0, $week.temp0, $month.temp0, $year.temp0, $unit.label.temp0, "KLP"), ($day.temp1, $week.temp1, $month.temp1, $year.temp1, $unit.label.temp1, "Sensor 1"), ($day.temp2, $week.temp2, $month.temp2, $year.temp2, $unit.label.temp2, "Sensor 2"), ($day.temp3, $week.temp3, $month.temp3, $year.temp3, $unit.label.temp3, "Sensor 3"), ($day.temp4, $week.temp4, $month.temp4, $year.temp4, $unit.label.temp4, "Sensor 4"), ($day.temp5, $week.temp5, $month.temp5, $year.temp5, $unit.label.temp5, "Sensor 5"), ($day.temp6, $week.temp6, $month.temp6, $year.temp6, $unit.label.temp6, "Sensor 6"), ($day.temp7, $week.temp7, $month.temp7, $year.temp7, $unit.label.temp7, "Sensor 7"), ($day.temp8, $week.temp8, $month.temp8, $year.temp8, $unit.label.temp8, "Sensor 8") ]:
+
+  #set ($d,$w,$m,$y,$u,$l) = $t
+
+  #if $d.has_data
   <tr style='vertical-align:top'>
-    <td class="metric_name">High Temp KLP:</td>
-    <td><span class="metric_value">$day.temp0.max.formatted</span><br/>
-      <span class="hilo_time">$day.temp0.maxtime</span></td>
-    <td><span class="metric_value">$month.temp0.max.formatted</span><br/>
-      <span class="hilo_time">$month.temp0.maxtime</span></td>
-    <td><span class="metric_value">$year.temp0.max.formatted</span><br/>
-      <span class="hilo_time">$year.temp0.maxtime</span></td>
-    <td class="metric_units">$unit.label.temp0</td>
+    <td class="metric_name">High Temp $l:</td>
+    <td><span class="metric_value">$d.max.formatted</span><br/>
+      <span class="hilo_time">$d.maxtime</span></td>
+    <td><span class="metric_value">$w.max.formatted</span><br/>
+      <span class="hilo_time">$w.maxtime</span></td>
+    <td><span class="metric_value">$m.max.formatted</span><br/>
+      <span class="hilo_time">$m.maxtime</span></td>
+    <td><span class="metric_value">$y.max.formatted</span><br/>
+      <span class="hilo_time">$y.maxtime</span></td>
+    <td class="metric_units">$u</td>
   </tr>
   <tr style='vertical-align:top'>
-    <td class="metric_name">Low Temp KLP:</td>
-    <td><span class="metric_value">$day.temp0.min.formatted</span><br/>
-      <span class="hilo_time">$day.temp0.mintime</span></td>
-    <td><span class="metric_value">$month.temp0.min.formatted</span><br/>
-      <span class="hilo_time">$month.temp0.mintime</span></td>
-    <td><span class="metric_value">$year.temp0.min.formatted</span><br/>
-      <span class="hilo_time">$year.temp0.mintime</span></td>
-    <td class="metric_units">$unit.label.temp0</td>
-  </tr>
-  #end if
-  #if $day.temp1.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Temp 1:</td>
-    <td><span class="metric_value">$day.temp1.max.formatted</span><br/>
-      <span class="hilo_time">$day.temp1.maxtime</span></td>
-    <td><span class="metric_value">$month.temp1.max.formatted</span><br/>
-      <span class="hilo_time">$month.temp1.maxtime</span></td>
-    <td><span class="metric_value">$year.temp1.max.formatted</span><br/>
-      <span class="hilo_time">$year.temp1.maxtime</span></td>
-    <td class="metric_units">$unit.label.temp1</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Temp 1:</td>
-    <td><span class="metric_value">$day.temp1.min.formatted</span><br/>
-      <span class="hilo_time">$day.temp1.mintime</span></td>
-    <td><span class="metric_value">$month.temp1.min.formatted</span><br/>
-      <span class="hilo_time">$month.temp1.mintime</span></td>
-    <td><span class="metric_value">$year.temp1.min.formatted</span><br/>
-      <span class="hilo_time">$year.temp1.mintime</span></td>
-    <td class="metric_units">$unit.label.temp1</td>
+    <td class="metric_name">Low Temp $l:</td>
+    <td><span class="metric_value">$d.min.formatted</span><br/>
+      <span class="hilo_time">$d.mintime</span></td>
+    <td><span class="metric_value">$w.min.formatted</span><br/>
+      <span class="hilo_time">$w.mintime</span></td>
+    <td><span class="metric_value">$m.min.formatted</span><br/>
+      <span class="hilo_time">$m.mintime</span></td>
+    <td><span class="metric_value">$y.min.formatted</span><br/>
+      <span class="hilo_time">$y.mintime</span></td>
+    <td class="metric_units">$u</td>
   </tr>
   #end if
-  #if $day.temp2.has_data
+
+#end for
+
+#for t in [ ($day.humidity0, $week.humidity0, $month.humidity0, $year.humidity0, $unit.label.humidity0, "KLP"), ($day.humidity1, $week.humidity1, $month.humidity1, $year.humidity1, $unit.label.humidity1, "Sensor 1"), ($day.humidity2, $week.humidity2, $month.humidity2, $year.humidity2, $unit.label.humidity2, "Sensor 2"), ($day.humidity3, $week.humidity3, $month.humidity3, $year.humidity3, $unit.label.humidity3, "Sensor 3"), ($day.humidity4, $week.humidity4, $month.humidity4, $year.humidity4, $unit.label.humidity4, "Sensor 4"), ($day.humidity5, $week.humidity5, $month.humidity5, $year.humidity5, $unit.label.humidity5, "Sensor 5"), ($day.humidity6, $week.humidity6, $month.humidity6, $year.humidity6, $unit.label.humidity6, "Sensor 6"), ($day.humidity7, $week.humidity7, $month.humidity7, $year.humidity7, $unit.label.humidity7, "Sensor 7"), ($day.humidity8, $week.humidity8, $month.humidity8, $year.humidity8, $unit.label.humidity8, "Sensor 8") ]:
+
+  #set ($d,$w,$m,$y,$u,$l) = $t
+
+  #if $d.has_data
   <tr style='vertical-align:top'>
-    <td class="metric_name">High Temp 2:</td>
-    <td><span class="metric_value">$day.temp2.max.formatted</span><br/>
-      <span class="hilo_time">$day.temp2.maxtime</span></td>
-    <td><span class="metric_value">$month.temp2.max.formatted</span><br/>
-      <span class="hilo_time">$month.temp2.maxtime</span></td>
-    <td><span class="metric_value">$year.temp2.max.formatted</span><br/>
-      <span class="hilo_time">$year.temp2.maxtime</span></td>
-    <td class="metric_units">$unit.label.temp2</td>
+    <td class="metric_name">High Humidity $l:</td>
+    <td><span class="metric_value">$d.max.formatted</span><br/>
+      <span class="hilo_time">$d.maxtime</span></td>
+    <td><span class="metric_value">$w.max.formatted</span><br/>
+      <span class="hilo_time">$w.maxtime</span></td>
+    <td><span class="metric_value">$m.max.formatted</span><br/>
+      <span class="hilo_time">$m.maxtime</span></td>
+    <td><span class="metric_value">$y.max.formatted</span><br/>
+      <span class="hilo_time">$y.maxtime</span></td>
+    <td class="metric_units">$u</td>
   </tr>
   <tr style='vertical-align:top'>
-    <td class="metric_name">Low Temp 2:</td>
-    <td><span class="metric_value">$day.temp2.min.formatted</span><br/>
-      <span class="hilo_time">$day.temp2.mintime</span></td>
-    <td><span class="metric_value">$month.temp2.min.formatted</span><br/>
-      <span class="hilo_time">$month.temp2.mintime</span></td>
-    <td><span class="metric_value">$year.temp2.min.formatted</span><br/>
-      <span class="hilo_time">$year.temp2.mintime</span></td>
-    <td class="metric_units">$unit.label.temp2</td>
-  </tr>
-  #end if
-  #if $day.temp3.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Temp 3:</td>
-    <td><span class="metric_value">$day.temp3.max.formatted</span><br/>
-      <span class="hilo_time">$day.temp3.maxtime</span></td>
-    <td><span class="metric_value">$month.temp3.max.formatted</span><br/>
-      <span class="hilo_time">$month.temp3.maxtime</span></td>
-    <td><span class="metric_value">$year.temp3.max.formatted</span><br/>
-      <span class="hilo_time">$year.temp3.maxtime</span></td>
-    <td class="metric_units">$unit.label.temp3</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Temp 3:</td>
-    <td><span class="metric_value">$day.temp3.min.formatted</span><br/>
-      <span class="hilo_time">$day.temp3.mintime</span></td>
-    <td><span class="metric_value">$month.temp3.min.formatted</span><br/>
-      <span class="hilo_time">$month.temp3.mintime</span></td>
-    <td><span class="metric_value">$year.temp3.min.formatted</span><br/>
-      <span class="hilo_time">$year.temp3.mintime</span></td>
-    <td class="metric_units">$unit.label.temp3</td>
+    <td class="metric_name">Low Humidity $l:</td>
+    <td><span class="metric_value">$d.min.formatted</span><br/>
+      <span class="hilo_time">$d.mintime</span></td>
+    <td><span class="metric_value">$w.min.formatted</span><br/>
+      <span class="hilo_time">$w.mintime</span></td>
+    <td><span class="metric_value">$m.min.formatted</span><br/>
+      <span class="hilo_time">$m.mintime</span></td>
+    <td><span class="metric_value">$y.min.formatted</span><br/>
+      <span class="hilo_time">$y.mintime</span></td>
+    <td class="metric_units">$u</td>
   </tr>
   #end if
-  #if $day.temp4.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Temp 4:</td>
-    <td><span class="metric_value">$day.temp4.max.formatted</span><br/>
-      <span class="hilo_time">$day.temp4.maxtime</span></td>
-    <td><span class="metric_value">$month.temp4.max.formatted</span><br/>
-      <span class="hilo_time">$month.temp4.maxtime</span></td>
-    <td><span class="metric_value">$year.temp4.max.formatted</span><br/>
-      <span class="hilo_time">$year.temp4.maxtime</span></td>
-    <td class="metric_units">$unit.label.temp4</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Temp 4:</td>
-    <td><span class="metric_value">$day.temp4.min.formatted</span><br/>
-      <span class="hilo_time">$day.temp4.mintime</span></td>
-    <td><span class="metric_value">$month.temp4.min.formatted</span><br/>
-      <span class="hilo_time">$month.temp4.mintime</span></td>
-    <td><span class="metric_value">$year.temp4.min.formatted</span><br/>
-      <span class="hilo_time">$year.temp4.mintime</span></td>
-    <td class="metric_units">$unit.label.temp4</td>
-  </tr>
-  #end if
-  #if $day.temp5.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Temp 5:</td>
-    <td><span class="metric_value">$day.temp5.max.formatted</span><br/>
-      <span class="hilo_time">$day.temp5.maxtime</span></td>
-    <td><span class="metric_value">$month.temp5.max.formatted</span><br/>
-      <span class="hilo_time">$month.temp5.maxtime</span></td>
-    <td><span class="metric_value">$year.temp5.max.formatted</span><br/>
-      <span class="hilo_time">$year.temp5.maxtime</span></td>
-    <td class="metric_units">$unit.label.temp5</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Temp 5:</td>
-    <td><span class="metric_value">$day.temp5.min.formatted</span><br/>
-      <span class="hilo_time">$day.temp5.mintime</span></td>
-    <td><span class="metric_value">$month.temp5.min.formatted</span><br/>
-      <span class="hilo_time">$month.temp5.mintime</span></td>
-    <td><span class="metric_value">$year.temp5.min.formatted</span><br/>
-      <span class="hilo_time">$year.temp5.mintime</span></td>
-    <td class="metric_units">$unit.label.temp5</td>
-  </tr>
-  #end if
-  #if $day.temp6.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Temp 6:</td>
-    <td><span class="metric_value">$day.temp6.max.formatted</span><br/>
-      <span class="hilo_time">$day.temp6.maxtime</span></td>
-    <td><span class="metric_value">$month.temp6.max.formatted</span><br/>
-      <span class="hilo_time">$month.temp6.maxtime</span></td>
-    <td><span class="metric_value">$year.temp6.max.formatted</span><br/>
-      <span class="hilo_time">$year.temp6.maxtime</span></td>
-    <td class="metric_units">$unit.label.temp6</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Temp 6:</td>
-    <td><span class="metric_value">$day.temp6.min.formatted</span><br/>
-      <span class="hilo_time">$day.temp6.mintime</span></td>
-    <td><span class="metric_value">$month.temp6.min.formatted</span><br/>
-      <span class="hilo_time">$month.temp6.mintime</span></td>
-    <td><span class="metric_value">$year.temp6.min.formatted</span><br/>
-      <span class="hilo_time">$year.temp6.mintime</span></td>
-    <td class="metric_units">$unit.label.temp6</td>
-  </tr>
-  #end if
-  #if $day.temp7.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Temp 7:</td>
-    <td><span class="metric_value">$day.temp7.max.formatted</span><br/>
-      <span class="hilo_time">$day.temp7.maxtime</span></td>
-    <td><span class="metric_value">$month.temp7.max.formatted</span><br/>
-      <span class="hilo_time">$month.temp7.maxtime</span></td>
-    <td><span class="metric_value">$year.temp7.max.formatted</span><br/>
-      <span class="hilo_time">$year.temp7.maxtime</span></td>
-    <td class="metric_units">$unit.label.temp7</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Temp 7:</td>
-    <td><span class="metric_value">$day.temp7.min.formatted</span><br/>
-      <span class="hilo_time">$day.temp7.mintime</span></td>
-    <td><span class="metric_value">$month.temp7.min.formatted</span><br/>
-      <span class="hilo_time">$month.temp7.mintime</span></td>
-    <td><span class="metric_value">$year.temp7.min.formatted</span><br/>
-      <span class="hilo_time">$year.temp7.mintime</span></td>
-    <td class="metric_units">$unit.label.temp7</td>
-  </tr>
-  #end if
-  #if $day.temp8.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Temp 8:</td>
-    <td><span class="metric_value">$day.temp8.max.formatted</span><br/>
-      <span class="hilo_time">$day.temp8.maxtime</span></td>
-    <td><span class="metric_value">$month.temp8.max.formatted</span><br/>
-      <span class="hilo_time">$month.temp8.maxtime</span></td>
-    <td><span class="metric_value">$year.temp8.max.formatted</span><br/>
-      <span class="hilo_time">$year.temp8.maxtime</span></td>
-    <td class="metric_units">$unit.label.temp8</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Temp 8:</td>
-    <td><span class="metric_value">$day.temp8.min.formatted</span><br/>
-      <span class="hilo_time">$day.temp8.mintime</span></td>
-    <td><span class="metric_value">$month.temp8.min.formatted</span><br/>
-      <span class="hilo_time">$month.temp8.mintime</span></td>
-    <td><span class="metric_value">$year.temp8.min.formatted</span><br/>
-      <span class="hilo_time">$year.temp8.mintime</span></td>
-    <td class="metric_units">$unit.label.temp8</td>
-  </tr>
-  #end if
-  #if $day.humidity0.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Humidity KLP:</td>
-    <td><span class="metric_value">$day.humidity0.max.formatted</span><br/>
-      <span class="hilo_time">$day.humidity0.maxtime</span></td>
-    <td><span class="metric_value">$month.humidity0.max.formatted</span><br/>
-      <span class="hilo_time">$month.humidity0.maxtime</span></td>
-    <td><span class="metric_value">$year.humidity0.max.formatted</span><br/>
-      <span class="hilo_time">$year.humidity0.maxtime</span></td>
-    <td class="metric_units">$unit.label.humidity0</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Humidity KLP:</td>
-    <td><span class="metric_value">$day.humidity0.min.formatted</span><br/>
-      <span class="hilo_time">$day.humidity0.mintime</span></td>
-    <td><span class="metric_value">$month.humidity0.min.formatted</span><br/>
-      <span class="hilo_time">$month.humidity0.mintime</span></td>
-    <td><span class="metric_value">$year.humidity0.min.formatted</span><br/>
-      <span class="hilo_time">$year.humidity0.mintime</span></td>
-    <td class="metric_units">$unit.label.humidity0</td>
-  </tr>
-  #end if
-  #if $day.humidity1.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Humidity 1:</td>
-    <td><span class="metric_value">$day.humidity1.max.formatted</span><br/>
-      <span class="hilo_time">$day.humidity1.maxtime</span></td>
-    <td><span class="metric_value">$month.humidity1.max.formatted</span><br/>
-      <span class="hilo_time">$month.humidity1.maxtime</span></td>
-    <td><span class="metric_value">$year.humidity1.max.formatted</span><br/>
-      <span class="hilo_time">$year.humidity1.maxtime</span></td>
-    <td class="metric_units">$unit.label.humidity1</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Humidity 1:</td>
-    <td><span class="metric_value">$day.humidity1.min.formatted</span><br/>
-      <span class="hilo_time">$day.humidity1.mintime</span></td>
-    <td><span class="metric_value">$month.humidity1.min.formatted</span><br/>
-      <span class="hilo_time">$month.humidity1.mintime</span></td>
-    <td><span class="metric_value">$year.humidity1.min.formatted</span><br/>
-      <span class="hilo_time">$year.humidity1.mintime</span></td>
-    <td class="metric_units">$unit.label.humidity1</td>
-  </tr>
-  #end if
-  #if $day.humidity2.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Humidity 2:</td>
-    <td><span class="metric_value">$day.humidity2.max.formatted</span><br/>
-      <span class="hilo_time">$day.humidity2.maxtime</span></td>
-    <td><span class="metric_value">$month.humidity2.max.formatted</span><br/>
-      <span class="hilo_time">$month.humidity2.maxtime</span></td>
-    <td><span class="metric_value">$year.humidity2.max.formatted</span><br/>
-      <span class="hilo_time">$year.humidity2.maxtime</span></td>
-    <td class="metric_units">$unit.label.humidity2</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Humidity 2:</td>
-    <td><span class="metric_value">$day.humidity2.min.formatted</span><br/>
-      <span class="hilo_time">$day.humidity2.mintime</span></td>
-    <td><span class="metric_value">$month.humidity2.min.formatted</span><br/>
-      <span class="hilo_time">$month.humidity2.mintime</span></td>
-    <td><span class="metric_value">$year.humidity2.min.formatted</span><br/>
-      <span class="hilo_time">$year.humidity2.mintime</span></td>
-    <td class="metric_units">$unit.label.humidity2</td>
-  </tr>
-  #end if
-  #if $day.humidity3.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Humidity 3:</td>
-    <td><span class="metric_value">$day.humidity3.max.formatted</span><br/>
-      <span class="hilo_time">$day.humidity3.maxtime</span></td>
-    <td><span class="metric_value">$month.humidity3.max.formatted</span><br/>
-      <span class="hilo_time">$month.humidity3.maxtime</span></td>
-    <td><span class="metric_value">$year.humidity3.max.formatted</span><br/>
-      <span class="hilo_time">$year.humidity3.maxtime</span></td>
-    <td class="metric_units">$unit.label.humidity3</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Humidity 3:</td>
-    <td><span class="metric_value">$day.humidity3.min.formatted</span><br/>
-      <span class="hilo_time">$day.humidity3.mintime</span></td>
-    <td><span class="metric_value">$month.humidity3.min.formatted</span><br/>
-      <span class="hilo_time">$month.humidity3.mintime</span></td>
-    <td><span class="metric_value">$year.humidity3.min.formatted</span><br/>
-      <span class="hilo_time">$year.humidity3.mintime</span></td>
-    <td class="metric_units">$unit.label.humidity3</td>
-  </tr>
-  #end if
-  #if $day.humidity5.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Humidity 4:</td>
-    <td><span class="metric_value">$day.humidity4.max.formatted</span><br/>
-      <span class="hilo_time">$day.humidity4.maxtime</span></td>
-    <td><span class="metric_value">$month.humidity4.max.formatted</span><br/>
-      <span class="hilo_time">$month.humidity4.maxtime</span></td>
-    <td><span class="metric_value">$year.humidity4.max.formatted</span><br/>
-      <span class="hilo_time">$year.humidity4.maxtime</span></td>
-    <td class="metric_units">$unit.label.humidity4</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Humidity 4:</td>
-    <td><span class="metric_value">$day.humidity4.min.formatted</span><br/>
-      <span class="hilo_time">$day.humidity4.mintime</span></td>
-    <td><span class="metric_value">$month.humidity4.min.formatted</span><br/>
-      <span class="hilo_time">$month.humidity4.mintime</span></td>
-    <td><span class="metric_value">$year.humidity4.min.formatted</span><br/>
-      <span class="hilo_time">$year.humidity4.mintime</span></td>
-    <td class="metric_units">$unit.label.humidity4</td>
-  </tr>
-  #end if
-  #if $day.humidity5.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Humidity 5:</td>
-    <td><span class="metric_value">$day.humidity5.max.formatted</span><br/>
-      <span class="hilo_time">$day.humidity5.maxtime</span></td>
-    <td><span class="metric_value">$month.humidity5.max.formatted</span><br/>
-      <span class="hilo_time">$month.humidity5.maxtime</span></td>
-    <td><span class="metric_value">$year.humidity5.max.formatted</span><br/>
-      <span class="hilo_time">$year.humidity5.maxtime</span></td>
-    <td class="metric_units">$unit.label.humidity5</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Humidity 5:</td>
-    <td><span class="metric_value">$day.humidity5.min.formatted</span><br/>
-      <span class="hilo_time">$day.humidity5.mintime</span></td>
-    <td><span class="metric_value">$month.humidity5.min.formatted</span><br/>
-      <span class="hilo_time">$month.humidity5.mintime</span></td>
-    <td><span class="metric_value">$year.humidity5.min.formatted</span><br/>
-      <span class="hilo_time">$year.humidity5.mintime</span></td>
-    <td class="metric_units">$unit.label.humidity5</td>
-  </tr>
-  #end if
-  #if $day.humidity6.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Humidity 6:</td>
-    <td><span class="metric_value">$day.humidity6.max.formatted</span><br/>
-      <span class="hilo_time">$day.humidity6.maxtime</span></td>
-    <td><span class="metric_value">$month.humidity6.max.formatted</span><br/>
-      <span class="hilo_time">$month.humidity6.maxtime</span></td>
-    <td><span class="metric_value">$year.humidity6.max.formatted</span><br/>
-      <span class="hilo_time">$year.humidity6.maxtime</span></td>
-    <td class="metric_units">$unit.label.humidity6</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Humidity 6:</td>
-    <td><span class="metric_value">$day.humidity6.min.formatted</span><br/>
-      <span class="hilo_time">$day.humidity6.mintime</span></td>
-    <td><span class="metric_value">$month.humidity6.min.formatted</span><br/>
-      <span class="hilo_time">$month.humidity6.mintime</span></td>
-    <td><span class="metric_value">$year.humidity6.min.formatted</span><br/>
-      <span class="hilo_time">$year.humidity6.mintime</span></td>
-    <td class="metric_units">$unit.label.humidity6</td>
-  </tr>
-  #end if
-  #if $day.humidity7.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Humidity 7:</td>
-    <td><span class="metric_value">$day.humidity7.max.formatted</span><br/>
-      <span class="hilo_time">$day.humidity7.maxtime</span></td>
-    <td><span class="metric_value">$month.humidity7.max.formatted</span><br/>
-      <span class="hilo_time">$month.humidity7.maxtime</span></td>
-    <td><span class="metric_value">$year.humidity7.max.formatted</span><br/>
-      <span class="hilo_time">$year.humidity7.maxtime</span></td>
-    <td class="metric_units">$unit.label.humidity7</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Humidity 7:</td>
-    <td><span class="metric_value">$day.humidity7.min.formatted</span><br/>
-      <span class="hilo_time">$day.humidity7.mintime</span></td>
-    <td><span class="metric_value">$month.humidity7.min.formatted</span><br/>
-      <span class="hilo_time">$month.humidity7.mintime</span></td>
-    <td><span class="metric_value">$year.humidity7.min.formatted</span><br/>
-      <span class="hilo_time">$year.humidity7.mintime</span></td>
-    <td class="metric_units">$unit.label.humidity7</td>
-  </tr>
-  #end if
-  #if $day.humidity8.has_data
-  <tr style='vertical-align:top'>
-    <td class="metric_name">High Humidity 8:</td>
-    <td><span class="metric_value">$day.humidity8.max.formatted</span><br/>
-      <span class="hilo_time">$day.humidity8.maxtime</span></td>
-    <td><span class="metric_value">$month.humidity8.max.formatted</span><br/>
-      <span class="hilo_time">$month.humidity8.maxtime</span></td>
-    <td><span class="metric_value">$year.humidity8.max.formatted</span><br/>
-      <span class="hilo_time">$year.humidity8.maxtime</span></td>
-    <td class="metric_units">$unit.label.humidity8</td>
-  </tr>
-  <tr style='vertical-align:top'>
-    <td class="metric_name">Low Humidity 8:</td>
-    <td><span class="metric_value">$day.humidity8.min.formatted</span><br/>
-      <span class="hilo_time">$day.humidity8.mintime</span></td>
-    <td><span class="metric_value">$month.humidity8.min.formatted</span><br/>
-      <span class="hilo_time">$month.humidity8.mintime</span></td>
-    <td><span class="metric_value">$year.humidity8.min.formatted</span><br/>
-      <span class="hilo_time">$year.humidity8.mintime</span></td>
-    <td class="metric_units">$unit.label.humidity8</td>
-  </tr>
-  #end if
+
+#end for
+
 </table>
 <div id='footer'>
   <table>

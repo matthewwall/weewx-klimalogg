@@ -10,29 +10,25 @@ def loader():
 class KlimaLoggInstaller(ExtensionInstaller):
     def __init__(self):
         super(KlimaLoggInstaller, self).__init__(
-            version="1.1.2",
+            version="1.1.1",
             name='klimalogg',
             description='Collect and display KlimaLogg Pro sensor data with kl skin',
             author="Luc Heijst",
             author_email="ljm.heijst@gmail.com",
             config={
-                'StdArchive': {
-                    'data_binding': 'kl_binding'},
                 'StdReport': {
-                    'data_binding': 'kl_binding',
-                    'Klimalogg': {
-                        'skin': 'kl',
-                        'HTML_ROOT': 'kl'}},
+                    'NEW_data_binding': 'kl_binding',
+                    'StandardReport': {
+					    'HTML_ROOT': 'kl',
+                        'NEW_skin': 'kl'}},
+                'StdArchive': {
+                    'NEW_data_binding': 'kl_binding'},
                 'DataBindings': {
-                    'kl_binding': {
-                        'database': 'kl_archive_sqlite',
-                        'table_name': 'archive',
-                        'manager': 'weewx.wxmanager.WXDaySummaryManager',
-                        'schema': 'user.kl.schema'}},
-                'Databases': {
-                    'kl_archive_sqlite': {
-                        'database_name': 'kl.sdb',
-                        'database_type': 'SQLite'}}},
+				    'kl_binding': {
+						'manager': 'weewx.wxmanager.WXDaySummaryManager',
+						'schema': 'user.kl.schema',
+						'table_name': 'archive',
+						'database': 'archive_sqlite'}}},
             files=[('bin/user',
                     ['bin/user/kl.py']),
                    ('skins/kl',

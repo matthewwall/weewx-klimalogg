@@ -1187,7 +1187,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.1.1'
+DRIVER_VERSION = '1.1.2'
 
 
 def loader(config_dict, _):
@@ -1644,7 +1644,7 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
             nrem = self.station.get_uncached_history_count()
             ni = self.station.get_next_history_index()
             li = self.station.get_latest_history_index()
-            msg = "  scanned %s records: current=%s latest=%s remaining=%s\r" % (n, ni, li, nrem)
+            msg = "  scanned %s records: current=%s latest=%s remaining=%s\r" % (n-1, ni, li, nrem)
             sys.stdout.write(msg)
             sys.stdout.flush()
         self.station.stop_caching_history()
@@ -1845,7 +1845,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
             ni = self.get_next_history_index()
             li = self.get_latest_history_index()
             loginf("Scanned %s records: current=%s latest=%s remaining=%s" %
-                   (n, ni, li, nrem))
+                   (n-1, ni, li, nrem))
         self.stop_caching_history()
         records = self.get_history_cache_records()
         self.clear_history_cache()
