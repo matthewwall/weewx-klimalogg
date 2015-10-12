@@ -19,16 +19,16 @@ class KlimaLoggInstaller(ExtensionInstaller):
                 'StdReport': {
                     'NEW_data_binding': 'kl_binding',
                     'StandardReport': {
-					    'HTML_ROOT': 'kl',
+                        'HTML_ROOT': 'kl',
                         'NEW_skin': 'kl'}},
                 'StdArchive': {
                     'NEW_data_binding': 'kl_binding'},
                 'DataBindings': {
-				    'kl_binding': {
-						'manager': 'weewx.wxmanager.WXDaySummaryManager',
-						'schema': 'user.kl.schema',
-						'table_name': 'archive',
-						'database': 'archive_sqlite'}}},
+                    'kl_binding': {
+                        'manager': 'weewx.wxmanager.WXDaySummaryManager',
+                        'schema': 'user.kl.schema',
+                        'table_name': 'archive',
+                        'database': 'archive_sqlite'}}},
             files=[('bin/user',
                     ['bin/user/kl.py']),
                    ('skins/kl',
