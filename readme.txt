@@ -15,62 +15,26 @@ Installation instructions:
 
 3) Run the installer for klimalogg:
 
-./wee_extension --install [wherever you've put klimalogg archive 'kl-x.y.z.tar.gz']
+  wee_extension --install kl-x.y.z.tar.gz
 
 4) Replace the simulator driver with the klimalogg driver
 
-./wee_config --reconfigure --driver=user.kl --no-prompt
+  wee_config --reconfigure --driver=user.kl --no-prompt
 
 5) modify weewx.conf
 
+5a) Specify the kl_binding instead of wx_binding.  Klimalogg works best with
+    its own schema, not the wview schema that is the default for weewx.  To
+    make this happen you must change the data binding from wx_binding to
+    kl_binding in two places, the StdReport and StdArchive sections
+
+    data_binding = kl_binding
+
 5a) Optionally remove the [Simulator] driver section; it is no longer needed.
 
-[Simulator]
-    # This section is for the weewx weather station simulator
-
-    # The time (in seconds) between LOOP packets.
-    loop_interval = 2.5
-
-    # The simulator mode can be either 'simulator' or 'generator'.
-    # Real-time simulator. Sleep between each LOOP packet.
-    mode = simulator
-    # Generator.  Emit LOOP packets as fast as possible (useful for testing).
-    #mode = generator
-
-    # The start time. If not specified, the default is to use the present time.
-    #start = 2011-01-01 00:00
-
-    # The driver to use:
-    driver = weewx.drivers.simulator
-
-	##############################################################################
-
-5b)	Change the Standard skin of the [[StandardReport]] section to the kl skin.
-	The KlimaLogg is not a 'standard' weather station, so the graphs and reports
-	in skin Standard will not work properly, so change this:
-			skin = Standard
-			NEW_skin = kl
-	to this:
-			skin = kl
-
-5c) Specify the kl_binding instead of wx_binding.  Klimalogg works best with
-    its own schema, not the wview schema that is the default for weewx.  To
-    make this happen you must change the data binding in two places, the
-    StdReport and StdArchive sections:
-
-	Change in the [StdReport] section the databinding to kl_binding, so change this:
-		data_binding = wx_binding
-		NEW_data_binding = kl-binding
-	to this:
-		data_binding = kl-binding
-
-	Change in the [StdArchive] section the databinding to kl_binding, so change this:
-		data_binding = wx_binding
-		NEW_data_binding = kl-binding
-	to this:
-		data_binding = kl-binding
-
-5d) Save the contents of weewx.conf
+5b) Optionally remove the [[StandardReport]] section of [StdReport].
+    The KlimaLogg is not a 'standard' weather station, so the graphs and
+    reports in skin Standard will not work properly.
 
 6) restart weewx:
 

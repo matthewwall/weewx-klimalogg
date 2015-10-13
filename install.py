@@ -17,12 +17,9 @@ class KlimaLoggInstaller(ExtensionInstaller):
             author_email="ljm.heijst@gmail.com",
             config={
                 'StdReport': {
-                    'NEW_data_binding': 'kl_binding',
-                    'StandardReport': {
-                        'HTML_ROOT': 'kl',
-                        'NEW_skin': 'kl'}},
+                    'data_binding': 'kl_binding'},
                 'StdArchive': {
-                    'NEW_data_binding': 'kl_binding'},
+                    'data_binding': 'kl_binding'},
                 'DataBindings': {
                     'kl_binding': {
                         'manager': 'weewx.wxmanager.WXDaySummaryManager',
