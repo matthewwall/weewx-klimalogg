@@ -11,32 +11,30 @@ Installation instructions:
 
 1) Install weewx with the Simulator driver
 
-2) Go to the bin directory of the installed weewx package
-
-3) Run the installer for klimalogg:
+2) Run the installer for klimalogg:
 
   wee_extension --install kl-x.y.z.tar.gz
 
-4) Replace the simulator driver with the klimalogg driver
+3) Replace the simulator driver with the klimalogg driver
 
   wee_config --reconfigure --driver=user.kl --no-prompt
 
-5) modify weewx.conf
+4) modify weewx.conf
 
-5a) Specify the kl_binding instead of wx_binding.  Klimalogg works best with
+4a) Specify the kl_binding instead of wx_binding.  Klimalogg works best with
     its own schema, not the wview schema that is the default for weewx.  To
     make this happen you must change the data binding from wx_binding to
     kl_binding in two places, the StdReport and StdArchive sections
 
     data_binding = kl_binding
 
-5a) Optionally remove the [Simulator] driver section; it is no longer needed.
+4a) Optionally remove the [Simulator] driver section; it is no longer needed.
 
-5b) Optionally remove the [[StandardReport]] section of [StdReport].
+4b) Optionally remove the [[StandardReport]] section of [StdReport].
     The KlimaLogg is not a 'standard' weather station, so the graphs and
     reports in skin Standard will not work properly.
 
-6) restart weewx:
+5) restart weewx:
 
 sudo /etc/init.d/weewx stop
 sudo /etc/init.d/weewx start
