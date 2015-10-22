@@ -1187,7 +1187,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.1.2'
+DRIVER_VERSION = '1.1.3'
 
 
 def loader(config_dict, _):
@@ -1644,7 +1644,7 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
             nrem = self.station.get_uncached_history_count()
             ni = self.station.get_next_history_index()
             li = self.station.get_latest_history_index()
-            msg = "  scanned %s records: current=%s latest=%s remaining=%s\r" % (n-1, ni, li, nrem)
+            msg = "  Scanned %s record sets: current=%s latest=%s remaining=%s\r" % (n-1, ni, li, nrem)
             sys.stdout.write(msg)
             sys.stdout.flush()
         self.station.stop_caching_history()
@@ -1821,62 +1821,74 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
     def genStartupRecords(self, ts):
         loginf('Scanning historical records')
         self.clear_wait_at_start()  # let rf communication start
-        maxtries = 1445  # once per day at 00:00 the communication starts automatically ???
-        ntries = 0
-        last_n = nrem = None
-        last_ts = int(time.time())
-        self.start_caching_history(since_ts=ts)
-        while nrem is None or nrem > 0:
-            if ntries >= maxtries:
-                logerr('No historical data after %d tries' % ntries)
-                return
-            time.sleep(60)
-            ntries += 1
-            now = int(time.time())
-            n = self.get_num_history_scanned()
-            if n == last_n:
-                dur = now - last_ts
-                loginf('No data after %d seconds (press USB to start communication)' % dur)
-            else:
-                ntries = 0
-                last_ts = now
-            last_n = n
-            nrem = self.get_uncached_history_count()
-            ni = self.get_next_history_index()
-            li = self.get_latest_history_index()
-            loginf("Scanned %s records: current=%s latest=%s remaining=%s" %
-                   (n-1, ni, li, nrem))
-        self.stop_caching_history()
-        records = self.get_history_cache_records()
-        self.clear_history_cache()
-        loginf('Found %d historical records' % len(records))
-        last_ts = None
-        for r in records:
-            this_ts = r['dateTime']
-            if last_ts is not None and this_ts is not None:
-                rec = dict()
-                rec['usUnits'] = weewx.METRIC
-                rec['dateTime'] = this_ts
-                rec['interval'] = (this_ts - last_ts) / 60
-                for k in self.SENSOR_KEYS:
-                    if k in self.sensor_map and k in r:
-                        if k.startswith('Temp'):
-                            x = get_datum_diff(r[k],
-                                               SensorLimits.temperature_NP,
-                                               SensorLimits.temperature_OFL)
-                        elif k.startswith('Humidity'):
-                            x = get_datum_diff(r[k],
-                                               SensorLimits.humidity_NP,
-                                               SensorLimits.humidity_OFL)
-                        else:
-                            x = r[k]
-                        rec[self.sensor_map[k]] = x
-                if self.sensor_map['Temp0'] == 'temp0':
-                    for y in range(0, 9):
-                        rec['dewpoint%d' % y] = weewx.wxformulas.dewpointC(rec['temp%d' % y], rec['humidity%d' % y])
-                        rec['heatindex%d' % y] = weewx.wxformulas.heatindexC(rec['temp%d' % y], rec['humidity%d' % y])
-                yield rec
-            last_ts = this_ts
+        first_ts = ts
+        max_store_period = 300  # do another batch when period to save records is more than max_store_period
+        store_period = max_store_period # this number let the while loop start
+        while store_period >= max_store_period:
+            maxtries = 1445  # once per day at 00:00 the communication starts automatically ???
+            ntries = 0
+            last_n = nrem = None
+            last_ts = int(time.time())
+            self.start_caching_history(since_ts=first_ts)
+            while nrem is None or nrem > 0:
+                if ntries >= maxtries:
+                    logerr('No historical data after %d tries' % ntries)
+                    return
+                time.sleep(60)
+                ntries += 1
+                now = int(time.time())
+                n = self.get_num_history_scanned()
+                if n == last_n:
+                    dur = now - last_ts
+                    loginf('No data after %d seconds (press USB to start communication if USB is not lit)' % dur)
+                else:
+                    ntries = 0
+                    last_ts = now
+                last_n = n
+                nrem = self.get_uncached_history_count()
+                ni = self.get_next_history_index()
+                li = self.get_latest_history_index()
+                loginf("Scanned %s record sets: current=%s latest=%s remaining=%s" %
+                       (n, ni, li, nrem))
+            self.stop_caching_history()
+            records = self.get_history_cache_records()
+            self.clear_history_cache()
+            num_received = len(records)-1
+            loginf('Found %d historical records' % num_received)
+            last_ts = None
+            for r in records:
+                this_ts = r['dateTime']
+                if last_ts is not None and this_ts is not None:
+                    rec = dict()
+                    rec['usUnits'] = weewx.METRIC
+                    rec['dateTime'] = this_ts
+                    rec['interval'] = (this_ts - last_ts) / 60
+                    for k in self.SENSOR_KEYS:
+                        if k in self.sensor_map and k in r:
+                            if k.startswith('Temp'):
+                                x = get_datum_diff(r[k],
+                                                   SensorLimits.temperature_NP,
+                                                   SensorLimits.temperature_OFL)
+                            elif k.startswith('Humidity'):
+                                x = get_datum_diff(r[k],
+                                                   SensorLimits.humidity_NP,
+                                                   SensorLimits.humidity_OFL)
+                            else:
+                                x = r[k]
+                            rec[self.sensor_map[k]] = x
+                    if self.sensor_map['Temp0'] == 'temp0':
+                        for y in range(0, 9):
+                            rec['dewpoint%d' % y] = weewx.wxformulas.dewpointC(rec['temp%d' % y], rec['humidity%d' % y])
+                            rec['heatindex%d' % y] = weewx.wxformulas.heatindexC(rec['temp%d' % y], rec['humidity%d' % y])
+                    yield rec
+                last_ts = this_ts
+            # go for another scan when store_period is greater than max_store_period
+            store_period = int(time.time()) - this_ts
+            loginf("Saved %d historical records; ts last saved record %s" % (num_received, weeutil.weeutil.timestamp_to_string(this_ts)))
+            if store_period >= max_store_period:
+                first_ts = this_ts  # continue next batch with last found time stamp
+                loginf('Scan the historical records which were missed during the store period of %d s' % store_period)
+                loginf("The scan will start after the next historical record is received.")
 
     def startUp(self):
         if self._service is not None:
@@ -3640,7 +3652,7 @@ class CommunicationService(object):
                         # FIXME: this assumes a constant archive interval for
                         # all records in the station history
                         nreq = int(span / arcint) + 5  # FIXME: punt 5
-                        if nreq > nrec:
+                        if nrec > 0 and nreq > nrec:
                             loginf('handleHistoryData: too many records requested (%d), clipping to number stored (%d)' %
                                   (nreq, nrec))
                             nreq = nrec
@@ -3648,7 +3660,7 @@ class CommunicationService(object):
                         loginf('handleHistoryData: no start date known (empty database), use number stored (%d)' % nrec)
                         nreq = nrec
                 # Workaround for nrec up to 50,000; limit this number to limit_rec_read
-                logdbg('nreq=%s' % nreq)
+                logdbg('handleHistoryData: nreq=%s' % nreq)
                 if nreq > LIMIT_REC_READ_TO:
                     nreq = LIMIT_REC_READ_TO
                     loginf('Number of history records to catch up limited to: %s' % nreq)
@@ -3707,8 +3719,8 @@ class CommunicationService(object):
                                     logdbg('handleHistoryData: skipped record at Pos%d tsCurrentRec=%s DT is in the past' %
                                            (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
                                     self.records_skipped += 1
-                                # Check if this record more than 1 day newer than previous good record
-                                elif self.ts_last_rec != 0 and tsCurrentRec > self.ts_last_rec + 86400:
+                                # Check if this record more than 7 days newer than previous good record
+                                elif self.ts_last_rec != 0 and tsCurrentRec > self.ts_last_rec + 604800:
                                     logdbg('handleHistoryData: skipped record at Pos%d tsCurrentRec=%s DT has too big diff' %
                                            (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
                                     self.records_skipped += 1
@@ -3720,6 +3732,8 @@ class CommunicationService(object):
                                     self.records_appended += 1
                                     # save only TS of good records
                                     self.ts_last_rec = tsCurrentRec
+                                    # save index of last appended record
+                                    self.history_cache.last_this_index = thisIndex
                             # Check if this record is too old or has no date
                             elif tsCurrentRec < self.TS_2010_07:
                                 logerr('handleHistoryData: skippd record at Pos%d tsCurrentRec=None DT is too old' % x)
@@ -3732,14 +3746,19 @@ class CommunicationService(object):
                                 self.records_skipped += 1
                         self.history_cache.next_index = thisIndex
                 else:
-                    logdbg('handleHistoryData: index mismatch: indexRequested: %s, thisIndex: %s' %
-                           (indexRequested, thisIndex))
+                    if nrec > 0:
+                        logdbg('handleHistoryData: index mismatch: indexRequested: %s, thisIndex: %s' %
+                               (indexRequested, thisIndex))
+                    elif indexRequested != thisIndex:
+                        logdbg('handleHistoryData: skip corrupt record: indexRequested: %s, thisIndex: %s' %
+                               (indexRequested, thisIndex))
+                        self.history_cache.next_index += 1
+                        self.records_skipped += 1
                 nextIndex = self.history_cache.next_index
             self.history_cache.num_scanned += 1
             self.history_cache.num_outstanding_records = nrec
             loginf('handleHistoryData: records appended=%s, records skipped=%s, next=%s' %
                    (self.records_appended, self.records_skipped, nextIndex))
-
         self.setSleep(self.first_sleep, 0.010)
         newlen, newbuf = self.buildACKFrame(buf, ACTION_GET_HISTORY, cs, nextIndex)
         return newlen, newbuf
