@@ -47,10 +47,10 @@ Historical data are updated less frequently - every 15 minutes in the default
 configuration.
 
 Apparently the station console determines when data will be sent, and, once
-paired (synchronized), the transceiver is always listening.  The station console
-sends a broadcast once a day at midnight*.  If the transceiver responds, the
-station console may continue to broadcast data, depending on the transceiver
-response and the timing of the transceiver response.
+paired (synchronized), the transceiver is always listening.  The station
+console sends a broadcast once a day at midnight*.  If the transceiver
+responds, the station console may continue to broadcast data, depending on the
+transceiver response and the timing of the transceiver response.
 * when DCF time reception is OFF
 
 The following information was obtained by logging messages from the kl.py
@@ -1461,8 +1461,8 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     # polling_interval = 10
     # comm_interval = 8
 
-    # Optionally limit the catchup mechanism to a maximum of
-    # max_history_records records.  Possible values are in [0 .. 51200]
+    # Optionally limit the catchup mechanism to a maximum number of records.
+    # Possible values are in [0 .. 51200]
     # max_history_records = 51200
 
     # Sensors labels can have 1-10 upper-case alphanumeric characters;
@@ -1693,25 +1693,37 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         transceiver should be used.
         [Optional. Default is None]
         """
-
+        loginf('driver version is %s' % DRIVER_VERSION)
         self.vendor_id = stn_dict.get('vendor_id', 0x6666)
         self.product_id = stn_dict.get('product_id', 0x5555)
         self.model = stn_dict.get('model', 'TFA KlimaLogg')
         self.polling_interval = int(stn_dict.get('polling_interval', 10))
         self.comm_interval = int(stn_dict.get('comm_interval', 8))
         self.frequency = stn_dict.get('transceiver_frequency', 'EU')
+        loginf('frequency is %s' % self.frequency)
         self.config_serial = stn_dict.get('serial', None)
         self.logger_channel = int(stn_dict.get('logger_channel', 1))
         self.sensor_map_id = int(stn_dict.get('sensor_map_id', 0))
         if self.sensor_map_id == 0:
             self.sensor_map = KL_SENSOR_MAP
-            logdbg('database schema is kl-schema')
+            self.setup_units_kl_schema()
+            logdbg('using sensor map for kl schema')
         else:
             self.sensor_map = WVIEW_SENSOR_MAP
-            logdbg('database schema is wview-schema')
+            self.setup_units_wview_schema()
+            logdbg('using sensor map for wview schema')
 
         self.max_history_records = int(stn_dict.get('max_history_records', 51200))
+        loginf('catchup limited to %s records' % self.max_history_records)
         self.batch_size = int(stn_dict.get('batch_size', 1800))
+
+        timing = int(stn_dict.get('timing', 300))
+        self.first_sleep = float(timing)/1000.0
+        loginf('timing is %s ms (%0.3f s)' % (timing, self.first_sleep))
+
+        self.values = dict()
+        for i in range(1, 9):
+            self.values['sensor_text%d' % i] = stn_dict.get('sensor_text%d' % i, None)
 
         now = int(time.time())
         self._service = None
@@ -1735,21 +1747,6 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         global DEBUG_DUMP_FORMAT
         DEBUG_DUMP_FORMAT = stn_dict.get('debug_dump_format', 'auto')
 
-        timing = int(stn_dict.get('timing', 300))
-        self.first_sleep = float(timing)/1000
-
-        self.values = dict()
-        for i in range(1, 9):
-            self.values['sensor_text%d' % i] = stn_dict.get('sensor_text%d' % i, None)
-
-        loginf('driver version is %s' % DRIVER_VERSION)
-        loginf('frequency is %s' % self.frequency)
-        loginf('timing is %s ms (%0.3f s)' % (timing, self.first_sleep))
-
-        if self.sensor_map_id == 0:
-            self.setup_units_klview()
-        else:
-            self.setup_units_wview()
         self.startUp()
 
     @property
@@ -1938,7 +1935,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         return self._service.getLastStat().last_seen_ts
 
     @staticmethod
-    def setup_units_klview():
+    def setup_units_kl_schema():
         obs_group_dict['temp0'] = 'group_temperature'
         obs_group_dict['temp1'] = 'group_temperature'
         obs_group_dict['temp2'] = 'group_temperature'
@@ -1987,7 +1984,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         obs_group_dict['batteryStatus8'] = 'group_volt'
 
     @staticmethod
-    def setup_units_wview():
+    def setup_units_wview_schema():
         obs_group_dict['leafWet1'] = 'group_percent'
         obs_group_dict['soilMoist1'] = 'group_percent'
         obs_group_dict['soilMoist2'] = 'group_percent'
@@ -2532,12 +2529,12 @@ class StationConfig(object):
         return self.values['InBufCS']
 
     def setAlarmClockOffset(self):
-        # set Humidity Lo alarm of station when stations clock is too way off
+        # set Humidity Lo alarm when stations clock is too way off
         self.values['Humidity0Min'] = 99
         self.values['AlarmSet'][4] = (self.values['AlarmSet'][4] & 0xfd) + 0x2
 
     def resetAlarmClockOffset(self):
-        # reset Humidity Lo alarm of station when stations clock is within margins
+        # reset Humidity Lo alarm when stations clock is within margins
         self.values['Humidity0Min'] = 20
         self.values['AlarmSet'][4] = (self.values['AlarmSet'][4] & 0xfd)
 
@@ -2545,7 +2542,7 @@ class StationConfig(object):
         # test if config is read and sensor texts are not set before
         if self.values['InBufCS'] != 0 and self.read_config_sensor_texts:
             self.read_config_sensor_texts = False
-            # Use the sensor_text settings in weewx.conf to preset the sensor texts
+            # Use the sensor labels from the configuration
             for x in range(1, 9):
                 txt = [0] * 8
                 lbl = 'sensor_text%d' % x
@@ -3368,7 +3365,7 @@ class CommunicationService(object):
         self.station_config = StationConfig()
         self.current = CurrentData()
         self.comm_mode_interval = 8
-        self.config_serial = None  # the serial number given in weewx.conf
+        self.config_serial = None # optionally specified serial number
         self.logger_id = 0 # the default logger id
         self.transceiver_present = False
         self.registered_device_id = None
@@ -3973,7 +3970,7 @@ class CommunicationService(object):
         loginf("logger_channel is %s" % logger_channel)
         self.comm_mode_interval = comm_interval
         self.logger_id = logger_channel - 1
-        self.config_serial = serial  # the serial number given in weewx.conf
+        self.config_serial = serial
         self.hid.open(vendor_id, product_id, serial)
         self.initTransceiver(frequency_standard)
         self.transceiver_present = True
