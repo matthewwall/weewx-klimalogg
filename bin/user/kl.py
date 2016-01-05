@@ -23,9 +23,9 @@
 #
 
 """
-Classes and functions for interfacing with KlimaLogg weather stations.
+Classes and functions for the KlimaLogg temperature/humidity data loggers.
 
-TFA makes stations in the KlimaLogg series
+TFA makes stations in the KlimaLogg series.
 
 KlimaLoggPro is the software provided by TFA.
 
@@ -96,15 +96,17 @@ HistoryInterval parameter.  The factory default setting is 15 minutes.
 Each history record contains a timestamp.  Timestamps use the time from the
 console clock.  The console can record up to 50,000 history records.
 
-Reading 40,500 history records took 47:04 minutes using this driver on a Synology DS213+ disk station.
-An average of 70 ms per history record.
+Reading 40,500 history records took 47:04 minutes using this driver on a
+Synology DS213+ disk station. An average of 70 ms per history record.
 
-Reading 1501 history records took 204 seconds using this driver on a Raspberry Pi B+
-using a uSD card (class > 10 / UHS-I). The DB writing took 734 seconds.
-An average of 135 ms per history record. The database storage took 490 ms per history record.
+Reading 1501 history records took 204 seconds using this driver on a Raspberry
+Pi B+ using a uSD card (class > 10 / UHS-I). The DB writing took 734 seconds.
+An average of 135 ms per history record. The database storage took 490 ms per
+history record.
 
-Reading 81 history records took 17 seconds using this driver on a Ubuntu Netbook.
-An average of 210 ms per history record. The database storage took 210 ms per history record.
+Reading 81 history records took 17 seconds using this driver on a Ubuntu
+Netbook. An average of 210 ms per history record. The database storage took
+210 ms per history record.
 
 -------------------------------------------------------------------------------
 
@@ -212,7 +214,7 @@ Action:
 03: rtGetConfig      - Ask for Config message
 04: rtGetCurrent     - Ask for Current Weather message
 20: Send Config      - Send Config to WS
-60: Send Time        - Send Time to WS (works only if station is just initialized)
+60: Send Time        - Send Time to WS (only if station is just initialized)
 
 000:  d5 00 0b DevID LI 00 CfgCS 8cINT ThisAddr xx xx xx  rtGetHistory
 000:  d5 00 0b DevID LI 01 CfgCS 8cINT ThisAddr xx xx xx  rtReqSetTime
@@ -1119,7 +1121,8 @@ Step 3.  Handle the contents of the message. The type of message depends on
       handle the data of a (one) requested history record (note: in step 4 we
       can decide to request another history record).
   50: Request Read-History (MEM % > 0)
-      no other action than debug log (the driver will always read history messages when available)
+      no other action than debug log (the driver will always read history
+      messages when available)
   51: Request First-Time Config
       prepare a setFrame first time message
   52: Request SetConfig
@@ -1187,7 +1190,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.1.4'
+DRIVER_VERSION = '1.1.5'
 
 
 def loader(config_dict, _):
@@ -1208,8 +1211,6 @@ DEBUG_CONFIG_DATA = 0
 DEBUG_WEATHER_DATA = 0
 DEBUG_HISTORY_DATA = 0
 DEBUG_DUMP_FORMAT = 'auto'
-LIMIT_REC_READ_TO = 0
-MAX_BATCH = 1800
 
 # map the base sensor and 8 remote sensors to columns in the database schema
 WVIEW_SENSOR_MAP = {
@@ -1276,7 +1277,7 @@ KL_SENSOR_MAP = {
 }
 
 
-# kl schema (user/klschema.py) to use in place of the wview schema (schemas/wview.py)
+# kl schema to use in place of the wview schema
 schema = [('dateTime',             'INTEGER NOT NULL UNIQUE PRIMARY KEY'),
           ('usUnits',              'INTEGER NOT NULL'),
           ('interval',             'INTEGER NOT NULL'),
@@ -1448,24 +1449,26 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     debug_history_data = 1
     debug_dump_format = auto
 
-    # The serial number will be used to choose the right Weather Display Transceiver when more than one is present.
-    # TIP: when the serial number of a transceiver is not known yet, remove temporary the other transceiver from
-    # your server and start the driver without the serial number setting; the serial number and devid will be
-    # presented in the debug logging.
+    # The serial number will be used to choose a transceiver when more than one
+    # transceiver is present.  To determine the serial number, insert one
+    # transceiver at a time and start weewx - the serial number will appear in
+    # the weewx log.  Alternatively, use 'lsusb -v' and look for the serial
+    # number field.
     # USB transceiver Kat.Nr.: 30.3175  05/2014
-    # serial = 010128031400117  # devid = 0x0075
+    # serial = 010128031400117
 
     # logger_channel = 1
     # polling_interval = 10
     # comm_interval = 8
 
-    # The catchup mechanism will catchup history records to a maximum of limit_rec_read_to [0 .. 51200]
-    # limit_rec_read_to = 300 #range [0..51200]
+    # Optionally limit the catchup mechanism to a maximum of
+    # max_history_records records.  Possible values are in [0 .. 51200]
+    # max_history_records = 51200
 
-    # Sensor texts can have 1-10 upper-case alphanumeric characters;
+    # Sensors labels can have 1-10 upper-case alphanumeric characters;
     #   other allowed characters: space - + ( ) * , . / \ and o (o = lower case O used as degree symbol)
-    # Note: You can't preset sensor texts for non-present sensors
-    # Example preset of sensor texts:
+    # Note: You cannot define sensor labels for non-present sensors
+    # Example preset of sensor labels:
     # sensor_text1 = "5565 BED1"
     # sensor_text2 = "6DDF LAUN"
     # sensor_text3 = "7131 FRID"
@@ -1475,8 +1478,11 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     # sensor_text7 = "76F4 STUD"
     # sensor_text8 = "25D7 GARA"
 
-    # Preset sensor_map_id
-    sensor_map_id = 0 #  0 = KL_SENSOR_MAP, 1 = WVIEW_SENSOR_MAP
+    # The sensor map determines how klimalogg observations will map to the
+    # weewx database fields.  There are two pre-defined maps, one for the
+    # wview schema and another for the klimalogg schema.
+    #  0 = KL_SENSOR_MAP, 1 = WVIEW_SENSOR_MAP
+    sensor_map_id = 0
 
 """
 
@@ -1699,18 +1705,13 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         self.sensor_map_id = int(stn_dict.get('sensor_map_id', 0))
         if self.sensor_map_id == 0:
             self.sensor_map = KL_SENSOR_MAP
-        else:
-            self.sensor_map = WVIEW_SENSOR_MAP
-
-        if self.sensor_map['Temp0'] == 'temp0':
             logdbg('database schema is kl-schema')
         else:
+            self.sensor_map = WVIEW_SENSOR_MAP
             logdbg('database schema is wview-schema')
 
-        global LIMIT_REC_READ_TO
-        LIMIT_REC_READ_TO = int(stn_dict.get('limit_rec_read_to', 300))
-        global MAX_BATCH
-        MAX_BATCH = 1800
+        self.max_history_records = int(stn_dict.get('max_history_records', 51200))
+        self.batch_size = int(stn_dict.get('batch_size', 1800))
 
         now = int(time.time())
         self._service = None
@@ -1733,7 +1734,6 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         DEBUG_HISTORY_DATA = int(stn_dict.get('debug_history_data', 1))
         global DEBUG_DUMP_FORMAT
         DEBUG_DUMP_FORMAT = stn_dict.get('debug_dump_format', 'auto')
-
 
         timing = int(stn_dict.get('timing', 300))
         self.first_sleep = float(timing)/1000
@@ -1860,7 +1860,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                 else:
                     loginf("Scanned %s record sets: current=%s latest=%s remaining=%s" % (n, ni, li, nrem))
                 # handle historical records in batches of 1000
-                if n >= MAX_BATCH:
+                if n >= self.batch_size:
                     break
             self.stop_caching_history()
             records = self.get_history_cache_records()
@@ -1898,9 +1898,9 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
             # go for another scan when store_period is greater than max_store_period
             store_period = int(time.time()) - this_ts
             loginf("Saved %d historical records; ts last saved record %s" % (num_received, weeutil.weeutil.timestamp_to_string(this_ts)))
-            if n >= MAX_BATCH:
+            if n >= self.batch_size:
                 first_ts = this_ts  # continue next batch with last found time stamp
-                loginf('Scan the next batch of %d historical records' % MAX_BATCH)
+                loginf('Scan the next batch of %d historical records' % self.batch_size)
                 loginf("The scan will start after the next historical record is received.")
             elif store_period >= max_store_period:
                 first_ts = this_ts  # continue next batch with last found time stamp
@@ -1910,7 +1910,9 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
     def startUp(self):
         if self._service is not None:
             return
-        self._service = CommunicationService(self.first_sleep, self.values)
+        self._service = CommunicationService(self.first_sleep, self.values,
+                                             self.max_history_records,
+                                             self.batch_size)
         self._service.setup(self.frequency, self.comm_interval, self.logger_channel,
                             self.vendor_id, self.product_id, self.config_serial)
         self._service.startRFThread()
@@ -3354,7 +3356,7 @@ class AX5051RegisterNames:
 
 class CommunicationService(object):
 
-    def __init__(self, first_sleep, values):
+    def __init__(self, first_sleep, values, max_records=51200, batch_size=100):
         logdbg('CommunicationService.init')
 
         self.first_sleep = first_sleep
@@ -3383,6 +3385,9 @@ class CommunicationService(object):
         self.history_cache = HistoryCache()
         self.ts_last_rec = 0
         self.records_skipped = 0
+
+        self.max_records = max_records
+        self.batch_size = batch_size
 
     def buildFirstConfigFrame(self, cs):
         logdbg('buildFirstConfigFrame: cs=%04x' % cs)
@@ -3675,11 +3680,11 @@ class CommunicationService(object):
                     else:
                         loginf('handleHistoryData: no start date known (empty database), use number stored (%d)' % nrec)
                         nreq = nrec
-                # Workaround for nrec up to 50,000; limit this number to limit_rec_read
+                # limit number of history records that will be read
                 logdbg('handleHistoryData: nreq=%s' % nreq)
-                if nreq > LIMIT_REC_READ_TO:
-                    nreq = LIMIT_REC_READ_TO
-                    loginf('Number of history records to catch up limited to: %s' % nreq)
+                if nreq > self.max_records:
+                    nreq = self.max_records
+                    loginf('Number of history records limited to: %s' % nreq)
                 if nreq >= KlimaLoggDriver.max_records:
                     nrec = KlimaLoggDriver.max_records-1
                 idx = get_index(latestIndex - nreq)
@@ -3740,7 +3745,7 @@ class CommunicationService(object):
                                            (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
                                     self.records_skipped += 1
                                 else:
-                                    if self.history_cache.num_cached_records < MAX_BATCH:
+                                    if self.history_cache.num_cached_records < self.batch_size:
                                         # append good record to the history
                                         logdbg('handleHistoryData:  append record at Pos%d tsCurrentRec=%s' %
                                                (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
