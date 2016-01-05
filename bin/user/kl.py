@@ -1187,7 +1187,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.1.3'
+DRIVER_VERSION = '1.1.4'
 
 
 def loader(config_dict, _):
@@ -1209,6 +1209,7 @@ DEBUG_WEATHER_DATA = 0
 DEBUG_HISTORY_DATA = 0
 DEBUG_DUMP_FORMAT = 'auto'
 LIMIT_REC_READ_TO = 0
+MAX_BATCH = 1800
 
 # map the base sensor and 8 remote sensors to columns in the database schema
 WVIEW_SENSOR_MAP = {
@@ -1552,7 +1553,7 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
                 print 'Transceiver is paired (synchronized) to console'
                 break
             ntries += 1
-            msg = 'Press and hold the [v] key until "PC" appears'
+            msg = 'Press and hold the USB key until "USB" appears'
             if maxtries > 0:
                 msg += ' (attempt %d of %d)' % (ntries, maxtries)
             else:
@@ -1708,6 +1709,8 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
 
         global LIMIT_REC_READ_TO
         LIMIT_REC_READ_TO = int(stn_dict.get('limit_rec_read_to', 300))
+        global MAX_BATCH
+        MAX_BATCH = 1800
 
         now = int(time.time())
         self._service = None
@@ -1730,6 +1733,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         DEBUG_HISTORY_DATA = int(stn_dict.get('debug_history_data', 1))
         global DEBUG_DUMP_FORMAT
         DEBUG_DUMP_FORMAT = stn_dict.get('debug_dump_format', 'auto')
+
 
         timing = int(stn_dict.get('timing', 300))
         self.first_sleep = float(timing)/1000
@@ -1823,6 +1827,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         self.clear_wait_at_start()  # let rf communication start
         first_ts = ts
         max_store_period = 300  # do another batch when period to save records is more than max_store_period
+        batch_started = False
         store_period = max_store_period # this number let the while loop start
         while store_period >= max_store_period:
             maxtries = 1445  # once per day at 00:00 the communication starts automatically ???
@@ -1834,13 +1839,15 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                 if ntries >= maxtries:
                     logerr('No historical data after %d tries' % ntries)
                     return
-                time.sleep(60)
+                time.sleep(15)
                 ntries += 1
                 now = int(time.time())
-                n = self.get_num_history_scanned()
+                n = self.get_cached_history_count()
+                batch_started = n > 0
                 if n == last_n:
                     dur = now - last_ts
-                    loginf('No data after %d seconds (press USB to start communication if USB is not lit)' % dur)
+                    if not batch_started:
+                        loginf('No data after %d seconds (press USB to start communication if USB is not lit)' % dur)
                 else:
                     ntries = 0
                     last_ts = now
@@ -1848,8 +1855,13 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                 nrem = self.get_uncached_history_count()
                 ni = self.get_next_history_index()
                 li = self.get_latest_history_index()
-                loginf("Scanned %s record sets: current=%s latest=%s remaining=%s" %
-                       (n, ni, li, nrem))
+                if batch_started:
+                    loginf("The reading of historical records will continue within 5 minutes")
+                else:
+                    loginf("Scanned %s record sets: current=%s latest=%s remaining=%s" % (n, ni, li, nrem))
+                # handle historical records in batches of 1000
+                if n >= MAX_BATCH:
+                    break
             self.stop_caching_history()
             records = self.get_history_cache_records()
             self.clear_history_cache()
@@ -1858,6 +1870,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
             last_ts = None
             for r in records:
                 this_ts = r['dateTime']
+                loginf("Handle record %s" % weeutil.weeutil.timestamp_to_string(this_ts))
                 if last_ts is not None and this_ts is not None:
                     rec = dict()
                     rec['usUnits'] = weewx.METRIC
@@ -1885,7 +1898,11 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
             # go for another scan when store_period is greater than max_store_period
             store_period = int(time.time()) - this_ts
             loginf("Saved %d historical records; ts last saved record %s" % (num_received, weeutil.weeutil.timestamp_to_string(this_ts)))
-            if store_period >= max_store_period:
+            if n >= MAX_BATCH:
+                first_ts = this_ts  # continue next batch with last found time stamp
+                loginf('Scan the next batch of %d historical records' % MAX_BATCH)
+                loginf("The scan will start after the next historical record is received.")
+            elif store_period >= max_store_period:
                 first_ts = this_ts  # continue next batch with last found time stamp
                 loginf('Scan the historical records which were missed during the store period of %d s' % store_period)
                 loginf("The scan will start after the next historical record is received.")
@@ -2052,8 +2069,8 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
     def get_latest_history_index(self):
         return self._service.getLatestHistoryIndex()
 
-    def get_num_history_scanned(self):
-        return self._service.getNumHistoryScanned()
+    def get_cached_history_count(self):
+        return self._service.getCachedHistoryCount()
 
     def get_history_cache_records(self):
         return self._service.getHistoryCacheRecords()
@@ -2883,7 +2900,7 @@ class HistoryCache:
         self.next_index = None
         self.records = []
         self.num_outstanding_records = None
-        self.num_scanned = 0
+        self.num_cached_records = 0
         self.last_ts = 0
 
 
@@ -3365,7 +3382,6 @@ class CommunicationService(object):
         self.command = None
         self.history_cache = HistoryCache()
         self.ts_last_rec = 0
-        self.records_appended = 0
         self.records_skipped = 0
 
     def buildFirstConfigFrame(self, cs):
@@ -3674,7 +3690,6 @@ class CommunicationService(object):
                 logdbg('handleHistoryData: start_index=%s'
                        ' num_outstanding_records=%s' % (idx, nreq))
                 nextIndex = idx
-                self.records_appended = 0
                 self.records_skipped = 0
                 self.ts_last_rec = 0
             elif self.history_cache.next_index is not None:
@@ -3725,15 +3740,20 @@ class CommunicationService(object):
                                            (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
                                     self.records_skipped += 1
                                 else:
-                                    # append good record to the history
-                                    logdbg('handleHistoryData:  append record at Pos%d tsCurrentRec=%s' %
-                                           (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
-                                    self.history_cache.records.append(data.asDict(x))
-                                    self.records_appended += 1
-                                    # save only TS of good records
-                                    self.ts_last_rec = tsCurrentRec
-                                    # save index of last appended record
-                                    self.history_cache.last_this_index = thisIndex
+                                    if self.history_cache.num_cached_records < MAX_BATCH:
+                                        # append good record to the history
+                                        logdbg('handleHistoryData:  append record at Pos%d tsCurrentRec=%s' %
+                                               (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
+                                        self.history_cache.records.append(data.asDict(x))
+                                        self.history_cache.num_cached_records += 1
+                                        # save only TS of good records
+                                        self.ts_last_rec = tsCurrentRec
+                                        # save index of last appended record
+                                        self.history_cache.last_this_index = thisIndex
+                                    else:
+                                        logdbg('handleHistoryData: record at Pos%d tsCurrentRec=%s handled in next batch' %
+                                               (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
+                                        time.sleep(20)
                             # Check if this record is too old or has no date
                             elif tsCurrentRec < self.TS_2010_07:
                                 logerr('handleHistoryData: skippd record at Pos%d tsCurrentRec=None DT is too old' % x)
@@ -3755,10 +3775,9 @@ class CommunicationService(object):
                         self.history_cache.next_index += 1
                         self.records_skipped += 1
                 nextIndex = self.history_cache.next_index
-            self.history_cache.num_scanned += 1
             self.history_cache.num_outstanding_records = nrec
-            loginf('handleHistoryData: records appended=%s, records skipped=%s, next=%s' %
-                   (self.records_appended, self.records_skipped, nextIndex))
+            loginf('handleHistoryData: records cached=%s, records skipped=%s, next=%s' %
+                (self.history_cache.num_cached_records, self.records_skipped, nextIndex))
         self.setSleep(self.first_sleep, 0.010)
         newlen, newbuf = self.buildACKFrame(buf, ACTION_GET_HISTORY, cs, nextIndex)
         return newlen, newbuf
@@ -4010,8 +4029,8 @@ class CommunicationService(object):
     def getNextHistoryIndex(self):
         return self.history_cache.next_index
 
-    def getNumHistoryScanned(self):
-        return self.history_cache.num_scanned
+    def getCachedHistoryCount(self):
+        return self.history_cache.num_cached_records
 
     def getLatestHistoryIndex(self):
         return self.last_stat.latest_history_index

@@ -17,7 +17,10 @@ class KlimaLoggInstaller(ExtensionInstaller):
             author_email="ljm.heijst@gmail.com",
             config={
                 'StdReport': {
-                    'data_binding': 'kl_binding'},
+                    'data_binding': 'kl_binding',
+                    'kl': {
+                        'HTML_ROOT': 'kl',
+                        'skin': 'kl'}},
                 'StdArchive': {
                     'data_binding': 'kl_binding'},
                 'DataBindings': {

@@ -1,6 +1,6 @@
 klimalogg - Weewx driver for TFA KlimaLogg Pro
-Version 1.1.2
-Copyright 2015 Luc Heijst
+Version 1.1.4
+Copyright 2016 Luc Heijst
 
 Klimalogg ia a weewx extension to read data from the KlimaLogg Pro
 station and up to 8 thermo/hygro sensors. It saves data to its own database,
