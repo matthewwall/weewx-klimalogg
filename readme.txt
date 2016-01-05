@@ -1,5 +1,4 @@
 klimalogg - Weewx driver for TFA KlimaLogg Pro
-Version 1.1.4
 Copyright 2016 Luc Heijst
 
 Klimalogg ia a weewx extension to read data from the KlimaLogg Pro
