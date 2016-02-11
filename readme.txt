@@ -12,11 +12,11 @@ Installation instructions:
 
   (follow instructions in the weewx user guide)
 
-2) Download the klimalog driver
+2) Download the klimalogg driver
 
   wget https://github.com/matthewwall/weewx-klimalogg/archive/master.zip
 
-3) Run the installer for klimalogg:
+3) Install the klimalogg driver and skin
 
   wee_extension --install weewx-klimalogg-master.zip
 
