@@ -1190,7 +1190,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.1.5'
+DRIVER_VERSION = '1.1.6'
 
 
 def loader(config_dict, _):
@@ -1865,10 +1865,11 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
             num_received = len(records)-1
             loginf('Found %d historical records' % num_received)
             last_ts = None
+            this_ts = None
             for r in records:
                 this_ts = r['dateTime']
                 loginf("Handle record %s" % weeutil.weeutil.timestamp_to_string(this_ts))
-                if last_ts is not None and this_ts is not None:
+                if last_ts is not None:
                     rec = dict()
                     rec['usUnits'] = weewx.METRIC
                     rec['dateTime'] = this_ts
@@ -1893,16 +1894,19 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                     yield rec
                 last_ts = this_ts
             # go for another scan when store_period is greater than max_store_period
-            store_period = int(time.time()) - this_ts
-            loginf("Saved %d historical records; ts last saved record %s" % (num_received, weeutil.weeutil.timestamp_to_string(this_ts)))
-            if n >= self.batch_size:
-                first_ts = this_ts  # continue next batch with last found time stamp
-                loginf('Scan the next batch of %d historical records' % self.batch_size)
-                loginf("The scan will start after the next historical record is received.")
-            elif store_period >= max_store_period:
-                first_ts = this_ts  # continue next batch with last found time stamp
-                loginf('Scan the historical records which were missed during the store period of %d s' % store_period)
-                loginf("The scan will start after the next historical record is received.")
+            if this_ts is not None:
+                store_period = int(time.time()) - this_ts
+                loginf("Saved %d historical records; ts last saved record %s" % (num_received, weeutil.weeutil.timestamp_to_string(this_ts)))
+                if n >= self.batch_size:
+                    first_ts = this_ts  # continue next batch with last found time stamp
+                    loginf('Scan the next batch of %d historical records' % self.batch_size)
+                    loginf("The scan will start after the next historical record is received.")
+                elif store_period >= max_store_period:
+                    first_ts = this_ts  # continue next batch with last found time stamp
+                    loginf('Scan the historical records which were missed during the store period of %d s' % store_period)
+                    loginf("The scan will start after the next historical record is received.")
+            else:
+                store_period = int(time.time())
 
     def startUp(self):
         if self._service is not None:
