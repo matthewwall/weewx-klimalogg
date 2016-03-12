@@ -1190,7 +1190,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.1.6'
+DRIVER_VERSION = '1.1.7'
 
 
 def loader(config_dict, _):
@@ -1906,7 +1906,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                     loginf('Scan the historical records which were missed during the store period of %d s' % store_period)
                     loginf("The scan will start after the next historical record is received.")
             else:
-                store_period = int(time.time())
+                store_period = 0
 
     def startUp(self):
         if self._service is not None:
