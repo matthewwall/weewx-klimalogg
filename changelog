@@ -1,3 +1,6 @@
+1.1.7 12mar2016
+* fix uninitialized this_ts bug
+
 1.1.4 01jan2016
 * use luc's 1.1.4 package, plus packaging fixes
 
