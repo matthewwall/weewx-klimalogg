@@ -1190,7 +1190,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.1.7'
+DRIVER_VERSION = '1.2.0'
 
 
 def loader(config_dict, _):
@@ -1430,24 +1430,23 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
 [KlimaLogg]
     # This section is for the TFA KlimaLogg series of weather stations.
 
-    # Radio frequency to use between USB transceiver and console: US or EU
-    # US uses 915 MHz, EU uses 868.3 MHz.  Default is EU.
-    transceiver_frequency = EU
-
-    # The station model, e.g., 'TFA KlimaLoggPro' or 'TFA KlimaLogg'
-    model = TFA KlimaLogg
-
     # The driver to use:
     driver = user.kl
 
+    # Radio frequency to use between USB transceiver and console: US or EU
+    # US uses 915 MHz, EU uses 868.3 MHz.  Default is EU.
+    #transceiver_frequency = EU
+
+    # The station model, e.g., 'TFA KlimaLoggPro' or 'TFA KlimaLogg'
+    #model = TFA KlimaLogg
+
     # debug flags:
     #  0=no logging; 1=minimum logging; 2=normal logging; 3=detailed logging
-    # Don't forget to set debug flags to 0 when finished testing!
-    debug_comm = 0
-    debug_config_data = 1
-    debug_weather_data = 1
-    debug_history_data = 1
-    debug_dump_format = auto
+    #debug_comm = 0
+    #debug_config_data = 0
+    #debug_weather_data = 0
+    #debug_history_data = 0
+    #debug_dump_format = auto
 
     # The serial number will be used to choose a transceiver when more than one
     # transceiver is present.  To determine the serial number, insert one
@@ -1455,34 +1454,36 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     # the weewx log.  Alternatively, use 'lsusb -v' and look for the serial
     # number field.
     # USB transceiver Kat.Nr.: 30.3175  05/2014
-    # serial = 010128031400117
+    #serial = 010128031400117
 
-    # logger_channel = 1
-    # polling_interval = 10
-    # comm_interval = 8
+    # Polling interval is indicates how often, in seconds, to request data
+    # from the sensors.
+    #polling_interval = 10
+
+    #logger_channel = 1
+    #comm_interval = 8
 
     # Optionally limit the catchup mechanism to a maximum number of records.
     # Possible values are in [0 .. 51200]
-    # max_history_records = 51200
+    #max_history_records = 51200
 
-    # Sensors labels can have 1-10 upper-case alphanumeric characters;
-    #   other allowed characters: space - + ( ) * , . / \ and o (o = lower case O used as degree symbol)
-    # Note: You cannot define sensor labels for non-present sensors
-    # Example preset of sensor labels:
-    # sensor_text1 = "5565 BED1"
-    # sensor_text2 = "6DDF LAUN"
-    # sensor_text3 = "7131 FRID"
-    # sensor_text4 = "52F4 KID1"
-    # sensor_text5 = "67D7 BATH"
-    # sensor_text6 = "3731 KID2"
-    # sensor_text7 = "76F4 STUD"
-    # sensor_text8 = "25D7 GARA"
+    # Sensors labels can have 1-10 upper-case alphanumeric characters or
+    # the characters: space - + ( ) * , . / \ o
+    # Sensor labels cannot be specified for non-present sensors.
+    #sensor_text1 = "5565 BED1"
+    #sensor_text2 = "6DDF LAUN"
+    #sensor_text3 = "7131 FRID"
+    #sensor_text4 = "52F4 KID1"
+    #sensor_text5 = "67D7 BATH"
+    #sensor_text6 = "3731 KID2"
+    #sensor_text7 = "76F4 STUD"
+    #sensor_text8 = "25D7 GARA"
 
     # The sensor map determines how klimalogg observations will map to the
     # weewx database fields.  There are two pre-defined maps, one for the
     # wview schema and another for the klimalogg schema.
     #  0 = KL_SENSOR_MAP, 1 = WVIEW_SENSOR_MAP
-    sensor_map_id = 0
+    #sensor_map_id = 0
 
 """
 
@@ -1491,6 +1492,25 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
         print "transceiver, either 'US' (915 MHz) or 'EU' (868.3 MHz)."
         freq = self._prompt('frequency', 'EU', ['US', 'EU'])
         return {'transceiver_frequency': freq}
+
+    def modify_config(self, config_dict):
+        if 'Simulator' in config_dict:
+            print """
+Removing Simulator stanza"""
+            del config_dict['Simulator']
+        if ('StdReport' in config_dict and
+            'StandardReport' in config_dict['StdReport']):
+            print """
+Removing StandardReport stanza"""
+            del config_dict['StdReport']['StandardReport']
+        if 'StdReport' in config_dict:
+            print """
+Using kl_binding in StdReport"""
+            config_dict['StdReport']['data_binding'] = 'kl_binding'
+        if 'StdArchive' in config_dict:
+            print """
+Using kl_binding in StdArchive"""
+            config_dict['StdArchive']['data_binding'] = 'kl_binding'
 
 
 class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
@@ -1696,13 +1716,13 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         loginf('driver version is %s' % DRIVER_VERSION)
         self.vendor_id = stn_dict.get('vendor_id', 0x6666)
         self.product_id = stn_dict.get('product_id', 0x5555)
-        self.model = stn_dict.get('model', 'TFA KlimaLogg')
+        self.model = stn_dict.get('model', 'TFA KlimaLogg Pro')
         self.polling_interval = int(stn_dict.get('polling_interval', 10))
         self.comm_interval = int(stn_dict.get('comm_interval', 8))
+        self.logger_channel = int(stn_dict.get('logger_channel', 1))
         self.frequency = stn_dict.get('transceiver_frequency', 'EU')
         loginf('frequency is %s' % self.frequency)
         self.config_serial = stn_dict.get('serial', None)
-        self.logger_channel = int(stn_dict.get('logger_channel', 1))
         self.sensor_map_id = int(stn_dict.get('sensor_map_id', 0))
         if self.sensor_map_id == 0:
             self.sensor_map = KL_SENSOR_MAP
@@ -1739,11 +1759,11 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         global DEBUG_COMM
         DEBUG_COMM = int(stn_dict.get('debug_comm', 0))
         global DEBUG_CONFIG_DATA
-        DEBUG_CONFIG_DATA = int(stn_dict.get('debug_config_data', 1))
+        DEBUG_CONFIG_DATA = int(stn_dict.get('debug_config_data', 0))
         global DEBUG_WEATHER_DATA
-        DEBUG_WEATHER_DATA = int(stn_dict.get('debug_weather_data', 1))
+        DEBUG_WEATHER_DATA = int(stn_dict.get('debug_weather_data', 0))
         global DEBUG_HISTORY_DATA
-        DEBUG_HISTORY_DATA = int(stn_dict.get('debug_history_data', 1))
+        DEBUG_HISTORY_DATA = int(stn_dict.get('debug_history_data', 0))
         global DEBUG_DUMP_FORMAT
         DEBUG_DUMP_FORMAT = stn_dict.get('debug_dump_format', 'auto')
 
