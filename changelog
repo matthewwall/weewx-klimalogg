@@ -1,3 +1,6 @@
+1.2.0 01apr2016
+* automatically modify weewx.conf during install (only works with weewx 3.5.0+)
+
 1.1.7 12mar2016
 * fix uninitialized this_ts bug
 

@@ -10,9 +10,9 @@ def loader():
 class KlimaLoggInstaller(ExtensionInstaller):
     def __init__(self):
         super(KlimaLoggInstaller, self).__init__(
-            version="1.1.7",
+            version="1.2.0",
             name='klimalogg',
-            description='Collect and display KlimaLogg Pro sensor data with kl skin',
+            description='Collect and display KlimaLogg Pro sensor data',
             author="Luc Heijst",
             author_email="ljm.heijst@gmail.com",
             config={
