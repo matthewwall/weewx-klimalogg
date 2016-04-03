@@ -1,6 +1,7 @@
-1.2.1 03apr2016
+1.2.2 03apr2016
 * use weewx-kl.sdb as database name for klimalogg database
 * added kl_sqlite database configuration to avoid conflicts with weewx db
+* enable arbitrary sensor map, not just the two presets
 
 1.2.0 01apr2016
 * automatically modify weewx.conf during install (only works with weewx 3.5.0+)

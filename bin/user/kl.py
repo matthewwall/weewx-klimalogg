@@ -1190,7 +1190,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.2.1'
+DRIVER_VERSION = '1.2.2'
 
 
 def loader(config_dict, _):
@@ -1430,9 +1430,6 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
 [KlimaLogg]
     # This section is for the TFA KlimaLogg series of weather stations.
 
-    # The driver to use:
-    driver = user.kl
-
     # Radio frequency to use between USB transceiver and console: US or EU
     # US uses 915 MHz, EU uses 868.3 MHz.  Default is EU.
     #transceiver_frequency = EU
@@ -1484,6 +1481,15 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     # wview schema and another for the klimalogg schema.
     #  0 = KL_SENSOR_MAP, 1 = WVIEW_SENSOR_MAP
     #sensor_map_id = 0
+
+    # Or define your own mapping between sensor names and database fields.
+    #[[sensor_map]]
+    #    Temp0 = inTemp
+    #    Temp1 = outTemp
+    #    Temp2 = extraTemp2
+
+    # The driver to use:
+    driver = user.kl
 
 """
 
@@ -1719,15 +1725,19 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         self.frequency = stn_dict.get('transceiver_frequency', 'EU')
         loginf('frequency is %s' % self.frequency)
         self.config_serial = stn_dict.get('serial', None)
-        self.sensor_map_id = int(stn_dict.get('sensor_map_id', 0))
-        if self.sensor_map_id == 0:
-            self.sensor_map = KL_SENSOR_MAP
-            self.setup_units_kl_schema()
-            logdbg('using sensor map for kl schema')
+        self.sensor_map = stn_dict.get('sensor_map', None)
+        if self.sensor_map is None:
+            sensor_map_id = int(stn_dict.get('sensor_map_id', 0))
+            if sensor_map_id == 0:
+                self.sensor_map = KL_SENSOR_MAP
+                self.setup_units_kl_schema()
+                logdbg('using sensor map for kl schema')
+            else:
+                self.sensor_map = WVIEW_SENSOR_MAP
+                self.setup_units_wview_schema()
+                logdbg('using sensor map for wview schema')
         else:
-            self.sensor_map = WVIEW_SENSOR_MAP
-            self.setup_units_wview_schema()
-            logdbg('using sensor map for wview schema')
+            logdbg('using custom sensor map: %s' % self.sensor_map)
 
         self.max_history_records = int(stn_dict.get('max_history_records', 51200))
         loginf('catchup limited to %s records' % self.max_history_records)
@@ -1903,10 +1913,10 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                             else:
                                 x = r[k]
                             rec[self.sensor_map[k]] = x
-                    if self.sensor_map['Temp0'] == 'temp0':
-                        for y in range(0, 9):
-                            rec['dewpoint%d' % y] = weewx.wxformulas.dewpointC(rec['temp%d' % y], rec['humidity%d' % y])
-                            rec['heatindex%d' % y] = weewx.wxformulas.heatindexC(rec['temp%d' % y], rec['humidity%d' % y])
+                    for y in range(0, 9):
+                        if 'temp%d' % y in rec:
+                            rec['dewpoint%d' % y] = weewx.wxformulas.dewpointC(rec['temp%s' % y], rec.get('humidity%d' % y))
+                            rec['heatindex%d' % y] = weewx.wxformulas.heatindexC(rec['temp%s' % y], rec.get('humidity%d' % y))
                     yield rec
                 last_ts = this_ts
             # go for another scan when store_period is greater than max_store_period
@@ -2050,18 +2060,21 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                     x = data.values[k]
                 packet[self.sensor_map[k]] = x
         # Signal quality
-        packet[self.sensor_map['RxCheckPercent']] = data.values['SignalQuality']
+        if 'RxCheckPercent' in self.sensor_map:
+            packet[self.sensor_map['RxCheckPercent']] = data.values['SignalQuality']
         # battery low stati
-        packet[self.sensor_map['BatteryStatus0']] = 1 if data.values['AlarmData'][1] ^ 0x80 == 0 else 0
+        if 'BatteryStatus0' in self.sensor_map:
+            packet[self.sensor_map['BatteryStatus0']] = 1 if data.values['AlarmData'][1] ^ 0x80 == 0 else 0
         bitmask = 1
         for y in range(1, 9):
-            packet[self.sensor_map['BatteryStatus%d' % y]] = 1 if data.values['AlarmData'][0] ^ bitmask == 0 else 0
+            if 'BatteryStatus%d' % y in self.sensor_map:
+                packet[self.sensor_map['BatteryStatus%d' % y]] = 1 if data.values['AlarmData'][0] ^ bitmask == 0 else 0
             bitmask <<= 1
         # dewpoints and heatindexes only for klschema
-        if self.sensor_map['Temp0'] == 'temp0':
-            for y in range(0, 9):
-                packet['dewpoint%d' % y] = weewx.wxformulas.dewpointC(packet['temp%d' % y], packet['humidity%d' % y])
-                packet['heatindex%d' % y] = weewx.wxformulas.heatindexC(packet['temp%d' % y], packet['humidity%d' % y])
+        for y in range(0, 9):
+            if 'temp%d' % y in packet:
+                packet['dewpoint%d' % y] = weewx.wxformulas.dewpointC(packet['temp%d' % y], packet.get('humidity%d' % y))
+                packet['heatindex%d' % y] = weewx.wxformulas.heatindexC(packet['temp%d' % y], packet.get('humidity%d' % y))
 
         return packet
 
