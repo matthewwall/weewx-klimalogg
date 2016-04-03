@@ -10,15 +10,15 @@ Installation instructions:
 
 1) Install weewx, select Simulator as the weather station
 
-  (follow instructions in the weewx user guide)
+  http://weewx.com/docs/usersguide.htm
 
 2) Download the klimalogg driver
 
-  wget https://github.com/matthewwall/weewx-klimalogg/archive/master.zip
+  wget -O weewx-kl.zip https://github.com/matthewwall/weewx-klimalogg/archive/master.zip
 
 3) Install the klimalogg driver and skin
 
-  wee_extension --install weewx-klimalogg-master.zip
+  wee_extension --install weewx-kl.zip
 
 4) Replace the simulator driver with the klimalogg driver
 
