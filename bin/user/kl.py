@@ -1190,7 +1190,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.2.0'
+DRIVER_VERSION = '1.2.1'
 
 
 def loader(config_dict, _):
@@ -1495,21 +1495,17 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
 
     def modify_config(self, config_dict):
         if 'Simulator' in config_dict:
-            print """
-Removing Simulator stanza"""
+            print "Removing Simulator stanza"
             del config_dict['Simulator']
         if ('StdReport' in config_dict and
             'StandardReport' in config_dict['StdReport']):
-            print """
-Removing StandardReport stanza"""
+            print "Removing StandardReport stanza"
             del config_dict['StdReport']['StandardReport']
         if 'StdReport' in config_dict:
-            print """
-Using kl_binding in StdReport"""
+            print "Using kl_binding in StdReport"
             config_dict['StdReport']['data_binding'] = 'kl_binding'
         if 'StdArchive' in config_dict:
-            print """
-Using kl_binding in StdArchive"""
+            print "Using kl_binding in StdArchive"
             config_dict['StdArchive']['data_binding'] = 'kl_binding'
 
 

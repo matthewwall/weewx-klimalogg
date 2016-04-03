@@ -10,7 +10,7 @@ def loader():
 class KlimaLoggInstaller(ExtensionInstaller):
     def __init__(self):
         super(KlimaLoggInstaller, self).__init__(
-            version="1.2.0",
+            version="1.2.1",
             name='klimalogg',
             description='Collect and display KlimaLogg Pro sensor data',
             author="Luc Heijst",
@@ -28,7 +28,14 @@ class KlimaLoggInstaller(ExtensionInstaller):
                         'manager': 'weewx.wxmanager.WXDaySummaryManager',
                         'schema': 'user.kl.schema',
                         'table_name': 'archive',
-                        'database': 'archive_sqlite'}}},
+                        'database': 'kl_sqlite'}},
+                'Databases': {
+                    'kl_sqlite': {
+                        'database_name': 'weewx-kl.sdb',
+                        'database_type': 'SQLite'},
+                    'kl_mysql': {
+                        'database_name': 'weewx-kl',
+                        'database_type': 'MySQL'}}},
             files=[('bin/user',
                     ['bin/user/kl.py']),
                    ('skins/kl',
