@@ -22,7 +22,7 @@ Installation instructions:
 
 4) Replace the simulator driver with the klimalogg driver
 
-  wee_config --reconfigure --driver=user.kl --no-prompt
+  wee_config --reconfigure --driver=user.kl
 
 5) restart weewx:
 
