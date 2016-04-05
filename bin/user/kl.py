@@ -1,5 +1,4 @@
 # TFA KlimaLogg driver for weewx
-# $Id: kl.py 1246 2015-02-07 04:40:23Z mwall $
 #
 # Copyright 2015 Luc Heijst, Matthew Wall
 #
@@ -107,6 +106,17 @@ history record.
 Reading 81 history records took 17 seconds using this driver on a Ubuntu
 Netbook. An average of 210 ms per history record. The database storage took
 210 ms per history record.
+
+On a Raspberry Pi B:
+
+Total scanned:   51143
+Total time:      15:18:38
+
+Per record:      1.1 s
+ 
+Total scan:      1.2 hours        7.6 % of total time
+Total store:     12.9 hours      85.4 % of total time
+Total wait:      1.2 hours        7.9 % of total time
 
 -------------------------------------------------------------------------------
 
@@ -1190,7 +1200,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.2.2'
+DRIVER_VERSION = '1.2.3'
 
 
 def loader(config_dict, _):
@@ -1350,6 +1360,11 @@ def logerr(msg):
     logmsg(syslog.LOG_ERR, msg)
 
 
+def logtee(msg):
+    loginf(msg)
+    print "%s\r" % msg
+
+
 def log_traceback(dst=syslog.LOG_INFO, prefix='**** '):
     sfd = StringIO.StringIO()
     traceback.print_exc(file=sfd)
@@ -1450,7 +1465,6 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     # transceiver at a time and start weewx - the serial number will appear in
     # the weewx log.  Alternatively, use 'lsusb -v' and look for the serial
     # number field.
-    # USB transceiver Kat.Nr.: 30.3175  05/2014
     #serial = 010128031400117
 
     # Polling interval is indicates how often, in seconds, to request data
@@ -1458,7 +1472,6 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     #polling_interval = 10
 
     #logger_channel = 1
-    #comm_interval = 8
 
     # Optionally limit the catchup mechanism to a maximum number of records.
     # Possible values are in [0 .. 51200]
@@ -1479,7 +1492,7 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     # The sensor map determines how klimalogg observations will map to the
     # weewx database fields.  There are two pre-defined maps, one for the
     # wview schema and another for the klimalogg schema.
-    #  0 = KL_SENSOR_MAP, 1 = WVIEW_SENSOR_MAP
+    #  0 = KL_SENSOR_MAP; 1 = WVIEW_SENSOR_MAP
     #sensor_map_id = 0
 
     # Or define your own mapping between sensor names and database fields.
@@ -1852,6 +1865,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         max_store_period = 300  # do another batch when period to save records is more than max_store_period
         batch_started = False
         store_period = max_store_period # this number let the while loop start
+        records_handled = 0
         while store_period >= max_store_period:
             maxtries = 1445  # once per day at 00:00 the communication starts automatically ???
             ntries = 0
@@ -1870,7 +1884,10 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                 if n == last_n:
                     dur = now - last_ts
                     if not batch_started:
-                        loginf('No data after %d seconds (press USB to start communication if USB is not lit)' % dur)
+                        if records_handled == 0:
+                            logtee("Press USB button to start communication")
+                        else:
+                            logtee("The next batch of %s records will start within 5 minutes" % self.batch_size)
                 else:
                     ntries = 0
                     last_ts = now
@@ -1878,23 +1895,22 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                 nrem = self.get_uncached_history_count()
                 ni = self.get_next_history_index()
                 li = self.get_latest_history_index()
-                if batch_started:
-                    loginf("The reading of historical records will continue within 5 minutes")
-                else:
-                    loginf("Scanned %s record sets: current=%s latest=%s remaining=%s" % (n, ni, li, nrem))
-                # handle historical records in batches of 1000
+                if batch_started and n != 0:
+                    logtee("Records scanned: %s" % n)
+                # handle historical records in batches of batch_size
                 if n >= self.batch_size:
                     break
             self.stop_caching_history()
             records = self.get_history_cache_records()
             self.clear_history_cache()
             num_received = len(records)-1
-            loginf('Found %d historical records' % num_received)
+            logtee('Found %d historical records' % num_received)
             last_ts = None
             this_ts = None
             for r in records:
                 this_ts = r['dateTime']
-                loginf("Handle record %s" % weeutil.weeutil.timestamp_to_string(this_ts))
+                records_handled += 1
+                logtee("Handle record %s: %s" % (records_handled, weeutil.weeutil.timestamp_to_string(this_ts)))
                 if last_ts is not None:
                     rec = dict()
                     rec['usUnits'] = weewx.METRIC
@@ -1922,15 +1938,15 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
             # go for another scan when store_period is greater than max_store_period
             if this_ts is not None:
                 store_period = int(time.time()) - this_ts
-                loginf("Saved %d historical records; ts last saved record %s" % (num_received, weeutil.weeutil.timestamp_to_string(this_ts)))
+                logtee("Saved %d historical records; ts last saved record %s" % (num_received, weeutil.weeutil.timestamp_to_string(this_ts)))
                 if n >= self.batch_size:
                     first_ts = this_ts  # continue next batch with last found time stamp
-                    loginf('Scan the next batch of %d historical records' % self.batch_size)
-                    loginf("The scan will start after the next historical record is received.")
+                    logtee('Scan the next batch of %d historical records' % self.batch_size)
+                    logtee("The scan will start after the next historical record is received.")
                 elif store_period >= max_store_period:
                     first_ts = this_ts  # continue next batch with last found time stamp
-                    loginf('Scan the historical records which were missed during the store period of %d s' % store_period)
-                    loginf("The scan will start after the next historical record is received.")
+                    logtee('Scan the historical records which were missed during the store period of %d s' % store_period)
+                    logtee("The scan will start after the next historical record is received.")
             else:
                 store_period = 0
 
@@ -3688,12 +3704,12 @@ class CommunicationService(object):
         if self.command == ACTION_GET_HISTORY:
             if self.history_cache.start_index is None:
                 if self.history_cache.num_rec > 0:
-                    loginf('handleHistoryData: request for %s records' %
+                    logtee('handleHistoryData: request for %s records' %
                            self.history_cache.num_rec)
                     nreq = self.history_cache.num_rec
                 else:
                     if self.history_cache.since_ts > 0:
-                        loginf('handleHistoryData: request records since %s' %
+                        logtee('handleHistoryData: request records since %s' %
                                weeutil.weeutil.timestamp_to_string(self.history_cache.since_ts))
                         span = int(time.time()) - self.history_cache.since_ts
                         if cfg['history_interval'] is not None:

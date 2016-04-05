@@ -1,4 +1,3 @@
-# $Id: install.py 1175 2014-12-07 15:34:39Z mwall $
 # installer for klimalogg
 # Copyright 2015 Luc Heijst
 
@@ -10,7 +9,7 @@ def loader():
 class KlimaLoggInstaller(ExtensionInstaller):
     def __init__(self):
         super(KlimaLoggInstaller, self).__init__(
-            version="1.2.2",
+            version="1.2.3",
             name='klimalogg',
             description='Collect and display KlimaLogg Pro sensor data',
             author="Luc Heijst",

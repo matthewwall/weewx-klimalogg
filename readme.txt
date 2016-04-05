@@ -1,10 +1,10 @@
 klimalogg - Weewx driver for TFA KlimaLogg Pro
 Copyright 2016 Luc Heijst
 
-Klimalogg ia a weewx extension to read data from the KlimaLogg Pro
-station and up to 8 thermo/hygro sensors. It saves data to its own database,
-then those data can be displayed in weewx reports.  This extension also
-includes a sample skin that illustrates how to use the data.
+Klimalogg ia a weewx extension to read data from the KlimaLogg Pro station
+and up to 8 thermo/hygro sensors. It saves data to its own database, then
+those data can be displayed in weewx reports.  This extension also includes
+a sample skin that illustrates how to use the data.
 
 Installation instructions:
 
@@ -42,3 +42,11 @@ Beware that this installation process will modify weewx.conf:
   Remove the [[StandardReport]] section of [StdReport] if it exists.  The
   KlimaLogg is not a 'standard' weather station, so the graphs and reports
   in skin Standard will not work properly.
+
+
+Reading of historical records
+
+The Klimalogg Pro can store over 50,000 records.  If the logger is full it
+can take some time to download the records.  For example, on a Raspberry Pi 1B,
+reading 51143 records took 15 hours.  Systems with faster I/O will probably
+take considerably less time.

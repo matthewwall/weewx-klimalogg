@@ -1,3 +1,7 @@
+1.2.3 04apr2016
+* while reading historical records, output status to stdout as well as log
+* remove svn id tags
+
 1.2.2 03apr2016
 * use weewx-kl.sdb as database name for klimalogg database
 * added kl_sqlite database configuration to avoid conflicts with weewx db
