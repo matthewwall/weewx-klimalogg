@@ -1,7 +1,7 @@
-klimalogg - Weewx driver for TFA KlimaLogg Pro
+klimalogg - WeeWX driver for TFA KlimaLogg Pro
 Copyright 2016 Luc Heijst
 
-Klimalogg ia a weewx extension to read data from the KlimaLogg Pro station
+Klimalogg is a weewx extension to read data from the KlimaLogg Pro station
 and up to 8 thermo/hygro sensors. It saves data to its own database, then
 those data can be displayed in weewx reports.  This extension also includes
 a sample skin that illustrates how to use the data.
@@ -24,7 +24,7 @@ Installation instructions:
 
   wee_config --reconfigure --driver=user.kl
 
-5) restart weewx:
+5) Restart weewx:
 
   sudo /etc/init.d/weewx stop
   sudo /etc/init.d/weewx start

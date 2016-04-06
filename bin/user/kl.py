@@ -19,7 +19,6 @@
 #
 # Also many thanks to our testers, in special Boris Smeds and Raffael Boesch.
 # Without their help we couldn't have written this driver.
-#
 
 """
 Classes and functions for the KlimaLogg temperature/humidity data loggers.
