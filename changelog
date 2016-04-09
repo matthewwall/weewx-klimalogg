@@ -1,3 +1,6 @@
+1.2.4 08apr2016
+* cosmetic refactoring of default stanza and __init__
+
 1.2.3 04apr2016
 * while reading historical records, output status to stdout as well as log
 * remove svn id tags

@@ -1199,7 +1199,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.2.3'
+DRIVER_VERSION = '1.2.4'
 
 
 def loader(config_dict, _):
@@ -1446,35 +1446,14 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
 
     # Radio frequency to use between USB transceiver and console: US or EU
     # US uses 915 MHz, EU uses 868.3 MHz.  Default is EU.
-    #transceiver_frequency = EU
+    transceiver_frequency = EU
 
     # The station model, e.g., 'TFA KlimaLoggPro' or 'TFA KlimaLogg'
-    #model = TFA KlimaLogg
-
-    # debug flags:
-    #  0=no logging; 1=minimum logging; 2=normal logging; 3=detailed logging
-    #debug_comm = 0
-    #debug_config_data = 0
-    #debug_weather_data = 0
-    #debug_history_data = 0
-    #debug_dump_format = auto
-
-    # The serial number will be used to choose a transceiver when more than one
-    # transceiver is present.  To determine the serial number, insert one
-    # transceiver at a time and start weewx - the serial number will appear in
-    # the weewx log.  Alternatively, use 'lsusb -v' and look for the serial
-    # number field.
-    #serial = 010128031400117
+    model = TFA KlimaLogg Pro
 
     # Polling interval is indicates how often, in seconds, to request data
     # from the sensors.
-    #polling_interval = 10
-
-    #logger_channel = 1
-
-    # Optionally limit the catchup mechanism to a maximum number of records.
-    # Possible values are in [0 .. 51200]
-    #max_history_records = 51200
+    polling_interval = 10
 
     # Sensors labels can have 1-10 upper-case alphanumeric characters or
     # the characters: space - + ( ) * , . / \ o
@@ -1500,7 +1479,7 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     #    Temp1 = outTemp
     #    Temp2 = extraTemp2
 
-    # The driver to use:
+    # The driver to use
     driver = user.kl
 
 """
@@ -1725,7 +1704,28 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         devices with the same vendor and product IDs on the bus, each will
         have a unique serial number.  Use the serial number to indicate which
         transceiver should be used.
-        [Optional. Default is None]
+        [Optional.  Default is None]
+
+        logger_channel: Use the logger channel to identify the console.
+        [Optional.  Default is 1]
+
+        sensor_map_id: Either 0 (mapping for kl schema) or 1 (for wview schema)
+        Used only if no sensor map is specified.
+        [Optional.  Default is 0]
+
+        sensor_map: Indicates the mapping between sensor name and field in the
+        database schema.  Only observations in this map will be included in
+        LOOP packets.  If no sensor map is specified, then the sensor_map_id
+        is used to pick a mapping.
+        [Optional.  Default is None]
+
+        max_history_records: Maximum number of historical records to read from
+        the logger.
+        [Optional.  Default is 51200]
+
+        batch_size: Number of records to read in each tranche while reading
+        records from the logger.
+        [Optional.  Default is 1800]
         """
         loginf('driver version is %s' % DRIVER_VERSION)
         self.vendor_id = stn_dict.get('vendor_id', 0x6666)
@@ -1734,9 +1734,12 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         self.polling_interval = int(stn_dict.get('polling_interval', 10))
         self.comm_interval = int(stn_dict.get('comm_interval', 8))
         self.logger_channel = int(stn_dict.get('logger_channel', 1))
+        loginf('channel is %s' % self.logger_channel)
         self.frequency = stn_dict.get('transceiver_frequency', 'EU')
         loginf('frequency is %s' % self.frequency)
         self.config_serial = stn_dict.get('serial', None)
+        if self.config_serial is not None:
+            loginf('serial is %s' % self.config_serial)
         self.sensor_map = stn_dict.get('sensor_map', None)
         if self.sensor_map is None:
             sensor_map_id = int(stn_dict.get('sensor_map_id', 0))
@@ -1749,16 +1752,14 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                 self.setup_units_wview_schema()
                 logdbg('using sensor map for wview schema')
         else:
-            logdbg('using custom sensor map: %s' % self.sensor_map)
-
+            logdbg('using custom sensor map')
+        loginf('sensor map is: %s' % self.sensor_map)
         self.max_history_records = int(stn_dict.get('max_history_records', 51200))
         loginf('catchup limited to %s records' % self.max_history_records)
         self.batch_size = int(stn_dict.get('batch_size', 1800))
-
         timing = int(stn_dict.get('timing', 300))
         self.first_sleep = float(timing)/1000.0
         loginf('timing is %s ms (%0.3f s)' % (timing, self.first_sleep))
-
         self.values = dict()
         for i in range(1, 9):
             self.values['sensor_text%d' % i] = stn_dict.get('sensor_text%d' % i, None)
