@@ -1941,10 +1941,13 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                             rec[k] = x
                     yield rec
                 last_ts = this_ts
-            # go for another scan when store_period is greater than max_store_period
+            # go for another scan when store_period is greater than
+            # max_store_period
             if this_ts is not None:
                 store_period = int(time.time()) - this_ts
-                logtee("Saved %d historical records; ts last saved record %s" % (num_received, weeutil.weeutil.timestamp_to_string(this_ts)))
+                logtee("Saved %d historical records; ts last saved record %s" %
+                       (num_received,
+                        weeutil.weeutil.timestamp_to_string(this_ts)))
                 if n >= self.batch_size:
                     first_ts = this_ts  # continue next batch with last found time stamp
                     logtee('Scan the next batch of %d historical records' % self.batch_size)
@@ -1962,8 +1965,9 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         self._service = CommunicationService(self.first_sleep, self.values,
                                              self.max_history_records,
                                              self.batch_size)
-        self._service.setup(self.frequency, self.comm_interval, self.logger_channel,
-                            self.vendor_id, self.product_id, self.config_serial)
+        self._service.setup(self.frequency, self.comm_interval,
+                            self.logger_channel, self.vendor_id,
+                            self.product_id, self.config_serial)
         self._service.startRFThread()
 
     def shutDown(self):
@@ -2532,19 +2536,19 @@ class CurrentData(object):
         logdbg("SignalQuality: %3.0f " % self.values['SignalQuality'])
         for x in range(0, 9):
             if self.values['Temp%d' % x] != SensorLimits.temperature_NP:
-                logdbg("Temp%d:     %5.1f   Min: %5.1f (%s)   Max: %5.1f (%s)" %
-                       (x, self.values['Temp%s' % x],
-                        self.values['Temp%sMin' % x],
-                        self.values['Temp%sMinDT' % x],
-                        self.values['Temp%sMax' % x],
-                        self.values['Temp%sMaxDT' % x]))
+                logdbg("Temp%d:     %5.1f   Min: %5.1f (%s)   Max: %5.1f (%s)"
+                       % (x, self.values['Temp%s' % x],
+                          self.values['Temp%sMin' % x],
+                          self.values['Temp%sMinDT' % x],
+                          self.values['Temp%sMax' % x],
+                          self.values['Temp%sMaxDT' % x]))
             if self.values['Humidity%d' % x] != SensorLimits.humidity_NP:
-                logdbg("Humidity%d: %5.0f   Min: %5.0f (%s)   Max: %5.0f (%s)" %
-                       (x, self.values['Humidity%s' % x],
-                        self.values['Humidity%sMin' % x],
-                        self.values['Humidity%sMinDT' % x],
-                        self.values['Humidity%sMax' % x],
-                        self.values['Humidity%sMaxDT' % x]))
+                logdbg("Humidity%d: %5.0f   Min: %5.0f (%s)   Max: %5.0f (%s)"
+                       % (x, self.values['Humidity%s' % x],
+                          self.values['Humidity%sMin' % x],
+                          self.values['Humidity%sMinDT' % x],
+                          self.values['Humidity%sMax' % x],
+                          self.values['Humidity%sMaxDT' % x]))
         byte_str = ' '.join(['%02x' % x for x in self.values['AlarmData']])
         logdbg('AlarmData: %s' % byte_str)
 
@@ -2601,32 +2605,33 @@ class StationConfig(object):
             self.read_config_sensor_texts = False
             # Use the sensor labels from the configuration
             for x in range(1, 9):
-                txt = [0] * 8
                 lbl = 'sensor_text%d' % x
                 self.set_values['SensorText%d' % x] = values[lbl]
-                sensor_text = self.set_values['SensorText%d' % x]
+                sensor_text = values[lbl]
                 if sensor_text is not None:
                     if len(sensor_text) > 10:
-                        logerr('Config sensor_text%d: "%s" has more than 10 characters' % (x, sensor_text))
-                    else:
-                        text_ok = True
-                        for y in range(0, len(sensor_text)):
-                            if Decode.CHARSTR.find(sensor_text[y:y+1]) <= 0:
-                                text_ok = False
-                                logerr('Config sensor_text%d: "%s" contains not-allowd charachter %s on pos %s' %
-                                       (x, sensor_text, sensor_text[y:y+1], y+1))
-                        if text_ok:
-                            padded_sensor_text = sensor_text.ljust(10, '!')
-                        else:
-                            sensor_text = None
+                        loginf('sensor_text%d: "%s" is too long, trimmed to'
+                               ' 10 characters' % (x, sensor_text))
+                        sensor_text = sensor_text[0:10]
+                    text_ok = True
+                    for y in range(0, len(sensor_text)):
+                        if sensor_text[y:y+1] in Decode.CHARSTR:
+                            text_ok = False
+                            loginf('sensor_text%d: "%s" contains bogus'
+                                   ' character %s at position %s' %
+                                   (x, sensor_text, sensor_text[y:y+1], y+1))
+                    if not text_ok:
+                        sensor_text = None
                 if sensor_text is not None:
                     if self.values['SensorText%s' % x] == '(No sensor)':
-                        logerr('Config sensor_text%d: "%s" not allowed for non present sensor' % (x, sensor_text))
+                        logerr('sensor_text%d: "%s" ignored: no sensor present'
+                               % (x, sensor_text))
                     else:
-                        logdbg('Config sensor_text%d: "%s"' % (x, sensor_text))
+                        logdbg('sensor_text%d: "%s"' % (x, sensor_text))
                         txt = [0] * 8
-                        # just for clarity we didn't 'optimize' the code below
-                        # translate 10 characters of 6 bits into 8 bytes of 8 bits
+                        # just for clarity we didn't optimize the code below
+                        # map 10 characters of 6 bits into 8 bytes of 8 bits
+                        padded_sensor_text = sensor_text.ljust(10, '!')
                         char_id1 = Decode.CHARSTR.find(padded_sensor_text[0:1])
                         char_id2 = Decode.CHARSTR.find(padded_sensor_text[1:2])
                         char_id3 = Decode.CHARSTR.find(padded_sensor_text[2:3])
