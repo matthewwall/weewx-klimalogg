@@ -54,7 +54,7 @@ Pairing
 
 The Klimalogg console must be associated with a USB transceiver in a process
 called 'pairing'.  To pair the console with the USB transceiver, press the USB
-button on the console.
+button on the console until the unit beeps, then immediately (re)start weewx.
 
 
 Modifications to the weewx configuration file

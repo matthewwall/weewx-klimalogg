@@ -1436,6 +1436,8 @@ def print_dict(data):
         else:
             print '%s: %s' % (x, data[x])
 
+PRESS_USB = "press the USB button to start communication"
+
 
 class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
     @property
@@ -1573,7 +1575,7 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
                 print 'Transceiver is paired to console'
                 break
             ntries += 1
-            msg = 'Press and hold the USB key until "USB" appears'
+            msg = 'Press and hold the USB button until "USB" appears'
             if maxtries > 0:
                 msg += ' (attempt %d of %d)' % (ntries, maxtries)
             else:
@@ -1605,7 +1607,7 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
                 start_ts = int(time.time())
             else:
                 dur = int(time.time()) - start_ts
-                print 'No data after %d seconds (press USB to start communication)' % dur
+                print 'No data after %d seconds (%s)' % (dur, PRESS_USB)
             time.sleep(30)
         return None
 
@@ -1636,7 +1638,7 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
                 start_ts = int(time.time())
             else:
                 dur = int(time.time()) - start_ts
-                print 'No data after %d seconds (press USB to start communication)' % dur
+                print 'No data after %d seconds (%s)' % (dur, PRESS_USB)
             time.sleep(30)
 
     def show_history(self, maxtries, ts=0, count=0):
@@ -1657,7 +1659,7 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
             n = self.station.get_num_history_scanned()
             if n == last_n:
                 dur = now - last_ts
-                print 'No data after %d seconds (press USB to start communication)' % dur
+                print 'No data after %d seconds (%s)' % (dur, PRESS_USB)
             else:
                 ntries = 0
                 last_ts = now
@@ -1665,8 +1667,7 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
             nrem = self.station.get_uncached_history_count()
             ni = self.station.get_next_history_index()
             li = self.station.get_latest_history_index()
-            msg = "  Scanned %s record sets: current=%s latest=%s remaining=%s\r" % (n-1, ni, li, nrem)
-            sys.stdout.write(msg)
+            print "  Scanned %s record sets: current=%s latest=%s remaining=%s\r" % (n - 1, ni, li, nrem)
             sys.stdout.flush()
         self.station.stop_caching_history()
         records = self.station.get_history_cache_records()
@@ -1759,7 +1760,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         loginf('catchup limited to %s records' % self.max_history_records)
         self.batch_size = int(stn_dict.get('batch_size', 1800))
         timing = int(stn_dict.get('timing', 300))
-        self.first_sleep = float(timing)/1000.0
+        self.first_sleep = float(timing) / 1000.0
         loginf('timing is %s ms (%0.3f s)' % (timing, self.first_sleep))
         self.values = dict()
         for i in range(1, 9):
@@ -1816,7 +1817,8 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                 else:
                     self._empty_packet_count += 1
                     if DEBUG_WEATHER_DATA > 0 and self._empty_packet_count > 1:
-                        logdbg("genLoopPackets: timestamp unchanged, set to empty packet; count: %s" % self._empty_packet_count)
+                        logdbg("genLoopPackets: timestamp unchanged, set to empty packet; count: %s" %
+                               self._empty_packet_count)
                     packet = None
             else:
                 self._empty_packet_count += 1
@@ -1832,7 +1834,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                     if DEBUG_WEATHER_DATA > 0:
                         msg = "Restarting communication after %d empty packets" % self._empty_packet_count
                         logdbg(msg)
-                        raise weewx.WeeWxIOError('%s; press [USB] to start communication' % msg)
+                        raise weewx.WeeWxIOError('%s (%s)' % (msg, PRESS_USB))
                 packet = {'usUnits': weewx.METRIC, 'dateTime': now}
                 # if no new weather data for awhile, log it
                 if (self._last_obs_ts is None or
@@ -1852,7 +1854,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                     msg = 'no contact with console'
                     if ts is not None:
                         msg += ' after %d seconds' % (now - ts)
-                    msg += ': press [USB] to start communication'
+                    msg += ' (%s)' % PRESS_USB
                     loginf(msg)
                     self._last_contact_log_ts = now
 
@@ -1865,8 +1867,9 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         first_ts = ts
         max_store_period = 300  # do another batch when period to save records is more than max_store_period
         batch_started = False
-        store_period = max_store_period # this number let the while loop start
         records_handled = 0
+        n = 0
+        store_period = max_store_period
         while store_period >= max_store_period:
             maxtries = 1445  # once per day at 00:00 the communication starts automatically ???
             ntries = 0
@@ -1886,7 +1889,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                     dur = now - last_ts
                     if not batch_started:
                         if records_handled == 0:
-                            logtee("Press USB button to start communication")
+                            logtee(PRESS_USB)
                         else:
                             logtee("The next batch of %s records will start within 5 minutes" % self.batch_size)
                 else:
@@ -1904,7 +1907,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
             self.stop_caching_history()
             records = self.get_history_cache_records()
             self.clear_history_cache()
-            num_received = len(records)-1
+            num_received = len(records) - 1
             logtee('Found %d historical records' % num_received)
             last_ts = None
             this_ts = None
@@ -1955,7 +1958,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                     logtee("The scan will start after the next historical record is received.")
                 elif store_period >= max_store_period:
                     first_ts = this_ts  # continue next batch with last found time stamp
-                    logtee('Scan the historical records which were missed during the store period of %d s' % store_period)
+                    logtee('Scan the historical records missed during the store period of %d s' % store_period)
                     logtee("The scan will start after the next historical record is received.")
             else:
                 store_period = 0
@@ -2109,7 +2112,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
 
     def get_config(self):
         logdbg('get station configuration')
-        cfg = self._service.getConfigData().asDict()
+        cfg = self._service.getConfigData().as_dict()
         cs = cfg.get('checksum_out')
         if cs is None or cs == 0:
             return None
@@ -2202,8 +2205,7 @@ history_intervals = {
     HI_01STD: 60,
     HI_02STD: 120,
     HI_03STD: 180,
-    HI_06STD: 360,
-    }
+    HI_06STD: 360}
 
 # frequency standards and their associated transmission frequencies
 frequencies = {
@@ -2238,11 +2240,11 @@ class Decode(object):
     def toCharacters3_2(buf, start, startOnHiNibble):
         """read 3 (4 bits) nibbles, presentation as 2 (6 bit) characters"""
         if startOnHiNibble:
-            idx1 = ((buf[start+1] >> 2) & 0x3C) + ((buf[start] >> 2) & 0x3)
+            idx1 = ((buf[start + 1] >> 2) & 0x3C) + ((buf[start] >> 2) & 0x3)
             idx2 = ((buf[start] << 4) & 0x30) + ((buf[start] >> 4) & 0xF)
         else:
-            idx1 = ((buf[start+1] << 2) & 0x3C) + ((buf[start+1] >> 6) & 0x3)
-            idx2 = (buf[start+1] & 0x30) + (buf[start] & 0xF)
+            idx1 = ((buf[start + 1] << 2) & 0x3C) + ((buf[start + 1] >> 6) & 0x3)
+            idx2 = (buf[start + 1] & 0x30) + (buf[start] & 0xF)
         return Decode.CHARMAP[idx1] + Decode.CHARMAP[idx2]
 
     @staticmethod
@@ -2376,28 +2378,28 @@ class Decode(object):
     def toInt_2(buf, start, startOnHiNibble):
         """read 2 nibbles"""
         if startOnHiNibble:
-            rawpre = (buf[start] >> 4) * 10 + (buf[start+0] & 0xF) * 1
+            rawpre = (buf[start] >> 4) * 10 + (buf[start + 0] & 0xF) * 1
         else:
-            rawpre = (buf[start] & 0xF) * 10 + (buf[start+1] >> 4) * 1
+            rawpre = (buf[start] & 0xF) * 10 + (buf[start + 1] >> 4) * 1
         return rawpre
 
     @staticmethod
     def toDateTime10(buf, start, startOnHiNibble, label):
         """read 10 nibbles, presentation as DateTime"""
         result = None
-        if (Decode.isErr2(buf, start+0, startOnHiNibble) or
-            Decode.isErr2(buf, start+1, startOnHiNibble) or
-            Decode.isErr2(buf, start+2, startOnHiNibble) or
-            Decode.isErr2(buf, start+3, startOnHiNibble) or
-            Decode.isErr2(buf, start+4, startOnHiNibble)):
+        if (Decode.isErr2(buf, start + 0, startOnHiNibble) or
+            Decode.isErr2(buf, start + 1, startOnHiNibble) or
+            Decode.isErr2(buf, start + 2, startOnHiNibble) or
+            Decode.isErr2(buf, start + 3, startOnHiNibble) or
+            Decode.isErr2(buf, start + 4, startOnHiNibble)):
             logerr('ToDateTime: bogus date for %s: error status in buffer' %
                    label)
         else:
-            year    = Decode.toInt_2(buf, start+0, startOnHiNibble) + 2000
-            month   = Decode.toInt_2(buf, start+1, startOnHiNibble)
-            days    = Decode.toInt_2(buf, start+2, startOnHiNibble)
-            hours   = Decode.toInt_2(buf, start+3, startOnHiNibble)
-            minutes = Decode.toInt_2(buf, start+4, startOnHiNibble)
+            year    = Decode.toInt_2(buf, start + 0, startOnHiNibble) + 2000
+            month   = Decode.toInt_2(buf, start + 1, startOnHiNibble)
+            days    = Decode.toInt_2(buf, start + 2, startOnHiNibble)
+            hours   = Decode.toInt_2(buf, start + 3, startOnHiNibble)
+            minutes = Decode.toInt_2(buf, start + 4, startOnHiNibble)
             try:
                 result = datetime(year, month, days, hours, minutes)
             except ValueError:
@@ -2414,40 +2416,40 @@ class Decode(object):
     def toDateTime8(buf, start, startOnHiNibble, label):
         """read 8 nibbles, presentation as DateTime"""
         result = None
-        if Decode.isErr8(buf, start+0, startOnHiNibble):
+        if Decode.isErr8(buf, start + 0, startOnHiNibble):
             logerr('ToDateTime: %s: no valid date' % label)
         else:
             if startOnHiNibble:
-                year  = Decode.toInt_2(buf, start+0, 1) + 2000
-                month = Decode.toInt_1(buf, start+1, 1)
-                days  = Decode.toInt_2(buf, start+1, 0)
-                tim1  = Decode.toInt_1(buf, start+2, 0)
-                tim2  = Decode.toInt_1(buf, start+3, 1)
-                tim3  = Decode.toInt_1(buf, start+3, 0)
+                year  = Decode.toInt_2(buf, start + 0, 1) + 2000
+                month = Decode.toInt_1(buf, start + 1, 1)
+                days  = Decode.toInt_2(buf, start + 1, 0)
+                tim1  = Decode.toInt_1(buf, start + 2, 0)
+                tim2  = Decode.toInt_1(buf, start + 3, 1)
+                tim3  = Decode.toInt_1(buf, start + 3, 0)
             else:
-                year  = Decode.toInt_2(buf, start+0, 0) + 2000
-                month = Decode.toInt_1(buf, start+1, 0)
-                days  = Decode.toInt_2(buf, start+2, 1)
-                tim1  = Decode.toInt_1(buf, start+3, 1)
-                tim2  = Decode.toInt_1(buf, start+3, 0)
-                tim3  = Decode.toInt_1(buf, start+4, 1)
+                year  = Decode.toInt_2(buf, start + 0, 0) + 2000
+                month = Decode.toInt_1(buf, start + 1, 0)
+                days  = Decode.toInt_2(buf, start + 2, 1)
+                tim1  = Decode.toInt_1(buf, start + 3, 1)
+                tim2  = Decode.toInt_1(buf, start + 3, 0)
+                tim3  = Decode.toInt_1(buf, start + 4, 1)
             if tim1 >= 10:
                 hours = tim1 + 10
             else:
                 hours = tim1
             if tim2 >= 10:
                 hours += 10
-                minutes = (tim2-10) * 10
+                minutes = (tim2 - 10) * 10
             else:
                 minutes = tim2 * 10
             minutes += tim3
             try:
                 result = datetime(year, month, days, hours, minutes)
             except ValueError:
-                logerr(('ToDateTime: bogus date for %s:'
-                        ' bad date conversion from'
-                        ' %s %s %s %s %s') %
-                        (label, minutes, hours, days, month, year))
+                logerr('ToDateTime: bogus date for %s:'
+                       ' bad date conversion from'
+                       ' %s %s %s %s %s' %
+                       (label, minutes, hours, days, month, year))
         if result is None:
             # FIXME: use None instead of a really old date to indicate invalid
             result = datetime(1900, 01, 01, 00, 00)
@@ -2529,10 +2531,10 @@ class CurrentData(object):
             values[lbl] = Decode.toHumidity_2_0(buf, self.BUFMAP[x][7], 1)
             values[lbl + 'MaxDT'] = None if values[lbl + 'Max'] == SensorLimits.humidity_NP or values[lbl + 'Max'] == SensorLimits.humidity_OFL else Decode.toDateTime8(buf, self.BUFMAP[x][8], 1, lbl + 'Max')
             values[lbl + 'MinDT'] = None if values[lbl + 'Min'] == SensorLimits.humidity_NP or values[lbl + 'Min'] == SensorLimits.humidity_OFL else Decode.toDateTime8(buf, self.BUFMAP[x][9], 1, lbl + 'Min')
-        values['AlarmData'] = buf[223:223+12]
+        values['AlarmData'] = buf[223:223 + 12]
         self.values = values
 
-    def toLog(self):
+    def to_log(self):
         logdbg("timestamp: %s" % self.values['timestamp'])
         logdbg("SignalQuality: %3.0f " % self.values['SignalQuality'])
         for x in range(0, 9):
@@ -2616,11 +2618,11 @@ class StationConfig(object):
                         sensor_text = sensor_text[0:10]
                     text_ok = True
                     for y in range(0, len(sensor_text)):
-                        if sensor_text[y:y+1] in Decode.CHARSTR:
+                        if sensor_text[y:y + 1] in Decode.CHARSTR:
                             text_ok = False
                             loginf('sensor_text%d: "%s" contains bogus'
                                    ' character %s at position %s' %
-                                   (x, sensor_text, sensor_text[y:y+1], y+1))
+                                   (x, sensor_text, sensor_text[y:y + 1], y + 1))
                     if not text_ok:
                         sensor_text = None
                 if sensor_text is not None:
@@ -2668,22 +2670,22 @@ class StationConfig(object):
         """Parse 3-digit number with 0 decimals, insert into buf"""
         num = int(number)
         nbuf = [0] * 3
-        for i in xrange(3-numbytes, 3):
+        for i in xrange(3 - numbytes, 3):
             nbuf[i] = num % 10
             num //= 10
         if startOnHiNibble:
-            buf[0+start] = nbuf[2]*16 + nbuf[1]
+            buf[0 + start] = nbuf[2] * 16 + nbuf[1]
             if numbytes > 2:
-                buf[1+start] = nbuf[0]*16 + (buf[2+start] & 0x0F)
+                buf[1 + start] = nbuf[0] * 16 + (buf[2 + start] & 0x0F)
         else:
-            buf[0+start] = (buf[0+start] & 0xF0) + nbuf[2]
+            buf[0 + start] = (buf[0 + start] & 0xF0) + nbuf[2]
             if numbytes > 2:
-                buf[1+start] = nbuf[1]*16 + nbuf[0]
+                buf[1 + start] = nbuf[1] * 16 + nbuf[0]
 
     @staticmethod
     def parse_1(number, buf, start, startOnHiNibble, numbytes):
         """Parse 3 digit number with 1 decimal, insert into buf"""
-        StationConfig.parse_0(number*10.0, buf, start, startOnHiNibble, numbytes)
+        StationConfig.parse_0(number * 10.0, buf, start, startOnHiNibble, numbytes)
 
     def read(self, buf):
         values = dict()
@@ -2697,14 +2699,14 @@ class StationConfig(object):
             lbl = 'Humidity%s' % x
             values[lbl + 'Max'] = Decode.toHumidity_2_0(buf, self.BUFMAP[2][x], 1)
             values[lbl + 'Min'] = Decode.toHumidity_2_0(buf, self.BUFMAP[3][x], 1)
-        values['AlarmSet'] = buf[53:53+5]
+        values['AlarmSet'] = buf[53:53 + 5]
         for x in range(1, 9):
-            values['Description%s' % x] = buf[self.BUFMAP[4][x-1]:self.BUFMAP[4][x-1]+8]
-            txt1 = Decode.toCharacters3_2(buf, self.BUFMAP[4][x-1]+6, 0)
-            txt2 = Decode.toCharacters3_2(buf, self.BUFMAP[4][x-1]+5, 1)
-            txt3 = Decode.toCharacters3_2(buf, self.BUFMAP[4][x-1]+3, 0)
-            txt4 = Decode.toCharacters3_2(buf, self.BUFMAP[4][x-1]+2, 1)
-            txt5 = Decode.toCharacters3_2(buf, self.BUFMAP[4][x-1], 0)
+            values['Description%s' % x] = buf[self.BUFMAP[4][x - 1]:self.BUFMAP[4][x - 1] + 8]
+            txt1 = Decode.toCharacters3_2(buf, self.BUFMAP[4][x - 1] + 6, 0)
+            txt2 = Decode.toCharacters3_2(buf, self.BUFMAP[4][x - 1] + 5, 1)
+            txt3 = Decode.toCharacters3_2(buf, self.BUFMAP[4][x - 1] + 3, 0)
+            txt4 = Decode.toCharacters3_2(buf, self.BUFMAP[4][x - 1] + 2, 1)
+            txt5 = Decode.toCharacters3_2(buf, self.BUFMAP[4][x - 1], 0)
             sensor_txt = txt1 + txt2 + txt3 + txt4 + txt5
             if sensor_txt == ' E@@      ':
                 values['SensorText%s' % x] = '(No sensor)'
@@ -2741,12 +2743,12 @@ class StationConfig(object):
         # insert reverse self.values['AlarmSet'] into newbuf
         rev = self.values['AlarmSet'][::-1]
         for y in range(0, 5):
-            newbuf[53+y] = rev[y]
+            newbuf[53 + y] = rev[y]
         # insert reverse self.values['Description%d'] into newbuf
         for x in range(1, 9):
             rev = self.values['Description%d' % x][::-1]
             for y in range(0, 8):
-                newbuf[self.BUFMAP[4][x-1]+y] = rev[y]
+                newbuf[self.BUFMAP[4][x - 1] + y] = rev[y]
         newbuf[122] = self.values['ResetHiLo']
         # checksum is not calculated for ResetHiLo (Output only)
         self.values['OutBufCS'] = calc_checksum(newbuf, 5, end=122) + 7
@@ -2762,17 +2764,17 @@ class StationConfig(object):
                 logdbg('checksum changed: OutBufCS=%04x InBufCS=%04x ' % 
                        (self.values['OutBufCS'], self.values['InBufCS']))
             if self.values['InBufCS'] != 0 and DEBUG_CONFIG_DATA > 1:
-                self.toLog()
+                self.to_log()
             changed = 1
         return changed, newbuf
 
-    def toLog(self):
+    def to_log(self):
         contrast = (int(self.values['Settings']) >> 4) & 0x0F
         alert = 'ON' if int(self.values['Settings']) & 0x8 == 0 else 'OFF'
         dcf_recep = 'OFF' if int(self.values['Settings']) & 0x4 == 0 else 'ON'
         time_form = '24h' if int(self.values['Settings']) & 0x2 == 0 else '12h'
         temp_form = 'C' if int(self.values['Settings']) & 0x1 == 0 else 'F'
-        time_zone = self.values['TimeZone'] if int(self.values['TimeZone']) <= 12 else int(self.values['TimeZone'])-256
+        time_zone = self.values['TimeZone'] if int(self.values['TimeZone']) <= 12 else int(self.values['TimeZone']) - 256
         history_interval = history_intervals.get(self.values['HistoryInterval'])
         logdbg('OutBufCS: %04x' % self.values['OutBufCS'])
         logdbg('InBufCS:  %04x' % self.values['InBufCS'])
@@ -2794,7 +2796,7 @@ class StationConfig(object):
             byte_str = ' '.join(['%02x' % y for y in self.values['Description%d' % x]])
             logdbg('Description%d: %s; SensorText%d: %s' % (x, byte_str, x, self.values['SensorText%s' % x]))
 
-    def asDict(self):
+    def as_dict(self):
         return {'checksum_in': self.values['InBufCS'],
                 'checksum_out': self.values['OutBufCS'],
                 'settings': self.values['Settings'],
@@ -2856,7 +2858,7 @@ class HistoryData(object):
                     buf, self.BUFMAPHIS[i][0], 1, 'HistoryData%d' % i)
                 for j in range(0, 9):
                     values['Pos%dTemp%d' % (i, j)] = Decode.toTemperature_3_1(
-                        buf, self.BUFMAPHIS[i][1][j], j%2)
+                        buf, self.BUFMAPHIS[i][1][j], j % 2)
                     values['Pos%dHumidity%d' % (i, j)] = Decode.toHumidity_2_0(
                         buf, self.BUFMAPHIS[i][2][j], 1)
             else:
@@ -2879,7 +2881,7 @@ class HistoryData(object):
                 values['Pos%dSensor' % i] = buf[self.BUFMAPALA[i][2]] & 0xf
         self.values = values
 
-    def toLog(self):
+    def to_log(self):
         last_ts = None
         for i in range(1, 7):
             if self.values['Pos%dAlarm' % i] == 0:
@@ -2914,34 +2916,34 @@ class HistoryData(object):
                 # Alarm record
                 if self.values['Pos%dAlarmdata' % i] & 0x1:
                     logdbg('Alarm=%01x: Humidity%d: %3.0f above/reached Hi-limit (%3.0f) on %s' %
-                        (self.values['Pos%dAlarmdata' % i],
-                         self.values['Pos%dSensor' % i],
-                         self.values['Pos%dHumidity' % i],
-                         self.values['Pos%dHumidityHi' % i],
-                         self.values['Pos%dDT' % i]))
+                           (self.values['Pos%dAlarmdata' % i],
+                            self.values['Pos%dSensor' % i],
+                            self.values['Pos%dHumidity' % i],
+                            self.values['Pos%dHumidityHi' % i],
+                            self.values['Pos%dDT' % i]))
                 if self.values['Pos%dAlarmdata' % i] & 0x2:
                     logdbg('Alarm=%01x: Humidity%d: %3.0f below/reached Lo-limit (%3.0f) on %s' %
-                        (self.values['Pos%dAlarmdata' % i],
-                         self.values['Pos%dSensor' % i],
-                         self.values['Pos%dHumidity' % i],
-                         self.values['Pos%dHumidityLo' % i],
-                         self.values['Pos%dDT' % i]))
+                           (self.values['Pos%dAlarmdata' % i],
+                            self.values['Pos%dSensor' % i],
+                            self.values['Pos%dHumidity' % i],
+                            self.values['Pos%dHumidityLo' % i],
+                            self.values['Pos%dDT' % i]))
                 if self.values['Pos%dAlarmdata' % i] & 0x4:
                     logdbg('Alarm=%01x: Temp%d: %3.1f above/reached Hi-limit (%3.1f) on %s' %
-                        (self.values['Pos%dAlarmdata' % i],
-                         self.values['Pos%dSensor' % i],
-                         self.values['Pos%dTemp' % i],
-                         self.values['Pos%dTempHi' % i],
-                         self.values['Pos%dDT' % i]))
+                           (self.values['Pos%dAlarmdata' % i],
+                            self.values['Pos%dSensor' % i],
+                            self.values['Pos%dTemp' % i],
+                            self.values['Pos%dTempHi' % i],
+                            self.values['Pos%dDT' % i]))
                 if self.values['Pos%dAlarmdata' % i] & 0x8:
                     logdbg('Alarm=%01x: Temp%d: %3.1f below/reached Lo-limit(%3.1f) on %s' %
-                        (self.values['Pos%dAlarmdata' % i],
-                         self.values['Pos%dSensor' % i],
-                         self.values['Pos%dTemp' % i],
-                         self.values['Pos%dTempLo' % i],
-                         self.values['Pos%dDT' % i]))
+                           (self.values['Pos%dAlarmdata' % i],
+                            self.values['Pos%dSensor' % i],
+                            self.values['Pos%dTemp' % i],
+                            self.values['Pos%dTempLo' % i],
+                            self.values['Pos%dDT' % i]))
 
-    def asDict(self, x=1):
+    def as_dict(self, x=1):
         """emit historical data as a dict with weewx conventions"""
         data = {'dateTime': tstr_to_ts(str(self.values['Pos%dDT' % x]))}
         for y in range(0, 9):
@@ -3087,18 +3089,18 @@ class Transceiver(object):
             raise weewx.WeeWxIOError(e)
 
         # FIXME: check return values
-        usbWait = 0.05
+        usb_wait = 0.05
         handle.getDescriptor(0x1, 0, 0x12)
-        time.sleep(usbWait)
+        time.sleep(usb_wait)
         handle.getDescriptor(0x2, 0, 0x9)
-        time.sleep(usbWait)
+        time.sleep(usb_wait)
         handle.getDescriptor(0x2, 0, 0x22)
-        time.sleep(usbWait)
+        time.sleep(usb_wait)
         handle.controlMsg(usb.TYPE_CLASS + usb.RECIP_INTERFACE,
                           0xa, [], 0x0, 0x0, 1000)
-        time.sleep(usbWait)
+        time.sleep(usb_wait)
         handle.getDescriptor(0x22, 0, 0x2a9)
-        time.sleep(usbWait)
+        time.sleep(usb_wait)
         return handle
 
     @staticmethod
@@ -3149,7 +3151,7 @@ class Transceiver(object):
     def readConfigFlash(self, addr, nbytes):
         new_data = [0] * 0x15
         while nbytes:
-            buf= [0xcc] * 0x0f  # 0x15
+            buf = [0xcc] * 0x0f  # 0x15
             buf[0] = 0xdd
             buf[1] = 0x0a
             buf[2] = (addr >> 8) & 0xFF
@@ -3176,7 +3178,7 @@ class Transceiver(object):
                 nbytes = 0
             else:
                 for i in xrange(0, 16):
-                    new_data[i] = buf[i+4]
+                    new_data[i] = buf[i + 4]
                 nbytes -= 16
                 addr += 16
             if DEBUG_COMM > 1:
@@ -3202,7 +3204,7 @@ class Transceiver(object):
         buf[1] = nbytes >> 8
         buf[2] = nbytes
         for i in xrange(0, nbytes):
-            buf[i+3] = data[i]
+            buf[i + 3] = data[i]
         if DEBUG_COMM == 1:
             self.dump('setFrame', buf, 'short')
         elif DEBUG_COMM > 1:
@@ -3222,10 +3224,10 @@ class Transceiver(object):
             value=0x00003d6,
             index=0x0000000,
             timeout=self.timeout)
-        data= [0] * 0x131
+        data = [0] * 0x131
         nbytes = (buf[1] << 8 | buf[2]) & 0x1ff
         for i in xrange(0, nbytes):
-            data[i] = buf[i+3]
+            data[i] = buf[i + 3]
         if DEBUG_COMM == 1:
             self.dump('getFrame', buf, 'short')
         elif DEBUG_COMM > 1:
@@ -3313,7 +3315,7 @@ class Transceiver(object):
 
     @staticmethod
     def readCfg(handle, addr, nbytes, timeout=1000):
-        new_data= [0] * 0x15
+        new_data = [0] * 0x15
         while nbytes:
             buf = [0xcc] * 0x0f  # 0x15
             buf[0] = 0xdd
@@ -3336,11 +3338,11 @@ class Transceiver(object):
             new_data = [0] * 0x15
             if nbytes < 16:
                 for i in xrange(0, nbytes):
-                    new_data[i] = buf[i+4]
+                    new_data[i] = buf[i + 4]
                 nbytes = 0
             else:
                 for i in xrange(0, 16):
-                    new_data[i] = buf[i+4]
+                    new_data[i] = buf[i + 4]
                 nbytes -= 16
                 addr += 16
         return new_data
@@ -3509,9 +3511,9 @@ class CommunicationService(object):
         # mo=0, tu=1, we=2, th=3, fr=4, sa=5, su=6  # DayOfWeek format of ws28xx devices
         # mo=1, tu=2, we=3, th=4, fr=5, sa=6, su=7  # DayOfWeek format of klimalogg devices
         DayOfWeek = tm[6]+1       # py  from 1 - 7 - 1=Mon
-        newbuf[9]  = DayOfWeek % 10 + 0x10 * (tm[2] % 10)           # day_lo   + DoW
-        newbuf[10] = (tm[2] // 10)  + 0x10 * (tm[1] % 10)           # month_lo + day_hi
-        newbuf[11] = (tm[1] // 10)  + 0x10 * ((tm[0] - 2000) % 10)  # year-lo  + month-hi
+        newbuf[9] = DayOfWeek % 10 + 0x10 * (tm[2] % 10)            # day_lo   + DoW
+        newbuf[10] = (tm[2] // 10) + 0x10 * (tm[1] % 10)           # month_lo + day_hi
+        newbuf[11] = (tm[1] // 10) + 0x10 * ((tm[0] - 2000) % 10)  # year-lo  + month-hi
         newbuf[12] = (tm[0] - 2000) // 10                           # not used + year-hi
         return newlen, newbuf
 
@@ -3531,7 +3533,7 @@ class CommunicationService(object):
             # and stale data after a period of twice the CommModeInterval,
             # but not with init GetHistory requests (0xF0)
             if (action == ACTION_GET_HISTORY and
-                age >= (comInt +1) * 2 and buf[1] != 0xF0):
+                age >= (comInt + 1) * 2 and buf[1] != 0xF0):
                 if DEBUG_COMM > 0:
                     logdbg('buildACKFrame: morphing action'
                            ' from %d to 5 (age=%s)' % (action, age))
@@ -3577,7 +3579,7 @@ class CommunicationService(object):
             self.hid.dump('InBuf', buf, fmt='long', length=length)
         self.station_config.read(buf)
         if DEBUG_CONFIG_DATA > 1:
-            self.station_config.toLog()
+            self.station_config.to_log()
         now = int(time.time())
         self.last_stat.update(seen_ts=now,
                               quality=(buf[4] & 0x7f), 
@@ -3601,7 +3603,7 @@ class CommunicationService(object):
             data.read(buf)
             self.current = data
             if DEBUG_WEATHER_DATA > 1:
-                data.toLog()
+                data.to_log()
         else:
             if DEBUG_WEATHER_DATA > 1:
                 logdbg('new weather data within %s; skip data; ts=%s' % 
@@ -3656,7 +3658,7 @@ class CommunicationService(object):
         data = HistoryData()
         data.read(buf)
         if DEBUG_HISTORY_DATA > 1:
-            data.toLog()
+            data.to_log()
 
         cs = buf[6] | (buf[5] << 8)
         latestAddr = bytes_to_addr(buf[7], buf[8], buf[9])
@@ -3679,7 +3681,7 @@ class CommunicationService(object):
             timeDiff = abs(now - tsFirstRec)
 
         # FIXME: what if we do not have config data yet?
-        cfg = self.getConfigData().asDict()
+        cfg = self.getConfigData().as_dict()
         dcfOn = 'OFF' if int(cfg['settings']) & 0x4 == 0 else 'ON'
 
         # check for an actual history record (tsPos1 == tsPos2) with valid
@@ -3746,7 +3748,7 @@ class CommunicationService(object):
                     nreq = self.max_records
                     loginf('Number of history records limited to: %s' % nreq)
                 if nreq >= KlimaLoggDriver.max_records:
-                    nrec = KlimaLoggDriver.max_records-1
+                    nrec = KlimaLoggDriver.max_records - 1
                 idx = get_index(latestIndex - nreq)
                 self.history_cache.start_index = idx
                 self.history_cache.next_index = idx
@@ -3767,7 +3769,7 @@ class CommunicationService(object):
                     # indexRequested 0 .. 51193
                     if indexRequested + 1 <= thisIndex <= indexRequested + 6:
                         thisIndexOk = True
-                elif indexRequested == (KlimaLoggDriver.max_records -1):
+                elif indexRequested == (KlimaLoggDriver.max_records - 1):
                     # indexRequested = 51199
                     if 0 <= thisIndex <= 5:
                         thisIndexOk = True
@@ -3785,23 +3787,27 @@ class CommunicationService(object):
                             if tsCurrentRec >= self.TS_2010_07 and tsCurrentRec >= self.history_cache.since_ts:
                                 # skip records with dateTime in the future
                                 if tsCurrentRec > (now + 300):
-                                    logdbg('handleHistoryData: skipped record at Pos%d tsCurrentRec=%s DT is in the future' %
-                                          (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
+                                    logdbg('handleHistoryData: skipped record at Pos%d tsCurrentRec=%s'
+                                           ' DT is in the future' %
+                                           (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
                                     self.records_skipped += 1
                                 # Check if two records in a row with the same ts
                                 elif tsCurrentRec == self.ts_last_rec:
                                     if DEBUG_HISTORY_DATA > 1:
-                                        logdbg('handleHistoryData: skipped record at Pos%d tsCurrentRec=%s DT is the same' %
-                                           (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
+                                        logdbg('handleHistoryData: skipped record at Pos%d tsCurrentRec=%s'
+                                               ' DT is the same' %
+                                               (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
                                     self.records_skipped += 1
                                 # Check if this record elder than previous good record
                                 elif tsCurrentRec < self.ts_last_rec:
-                                    logdbg('handleHistoryData: skipped record at Pos%d tsCurrentRec=%s DT is in the past' %
+                                    logdbg('handleHistoryData: skipped record at Pos%d tsCurrentRec=%s'
+                                           ' DT is in the past' %
                                            (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
                                     self.records_skipped += 1
                                 # Check if this record more than 7 days newer than previous good record
                                 elif self.ts_last_rec != 0 and tsCurrentRec > self.ts_last_rec + 604800:
-                                    logdbg('handleHistoryData: skipped record at Pos%d tsCurrentRec=%s DT has too big diff' %
+                                    logdbg('handleHistoryData: skipped record at Pos%d tsCurrentRec=%s'
+                                           ' DT has too big diff' %
                                            (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
                                     self.records_skipped += 1
                                 else:
@@ -3809,14 +3815,15 @@ class CommunicationService(object):
                                         # append good record to the history
                                         logdbg('handleHistoryData:  append record at Pos%d tsCurrentRec=%s' %
                                                (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
-                                        self.history_cache.records.append(data.asDict(x))
+                                        self.history_cache.records.append(data.as_dict(x))
                                         self.history_cache.num_cached_records += 1
                                         # save only TS of good records
                                         self.ts_last_rec = tsCurrentRec
                                         # save index of last appended record
                                         self.history_cache.last_this_index = thisIndex
                                     else:
-                                        logdbg('handleHistoryData: record at Pos%d tsCurrentRec=%s handled in next batch' %
+                                        logdbg('handleHistoryData: record at Pos%d tsCurrentRec=%s'
+                                               ' handled in next batch' %
                                                (x, weeutil.weeutil.timestamp_to_string(tsCurrentRec)))
                                         time.sleep(20)
                             # Check if this record is too old or has no date
@@ -4047,7 +4054,7 @@ class CommunicationService(object):
 
     def set_registered_device_id(self, val, logger_id):
         if val != self.registered_device_id:
-            loginf("console is paired to device with ID %04x and logger channel %s" % (val, logger_id+1))
+            loginf("console is paired to device with ID %04x and logger channel %s" % (val, logger_id + 1))
         self.registered_device_id = val
 
     def getDeviceRegistered(self):
@@ -4139,8 +4146,7 @@ class CommunicationService(object):
             # wait for genStartupRecords to start
             while self.history_cache.wait_at_start == 1:
                 time.sleep(1)
-            loginf("starting rf communication; press momentarily the USB button if communication does not start")
-            loginf("To pair and preset a logger channel, press USB button until the unit beeps; then (re)start weewx immediately")
+            loginf("starting rf communication")
             while self.running:
                 self.doRFCommunication()
         except Exception, e:
