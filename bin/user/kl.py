@@ -1199,7 +1199,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.2.4'
+DRIVER_VERSION = '1.3.0'
 
 
 def loader(config_dict, _):
@@ -1223,66 +1223,66 @@ DEBUG_DUMP_FORMAT = 'auto'
 
 # map the base sensor and 8 remote sensors to columns in the database schema
 WVIEW_SENSOR_MAP = {
-    'Temp0': 'inTemp',
-    'Humidity0': 'inHumidity',
-    'Temp1': 'outTemp',
-    'Humidity1': 'outHumidity',
-    'Temp2': 'extraTemp1',
-    'Humidity2': 'extraHumid1',
-    'Temp3': 'extraTemp2',
-    'Humidity3': 'extraHumid2',
-    'Temp4': 'extraTemp3',
-    'Humidity4': 'leafWet1',
-    'Temp5': 'soilTemp1',
-    'Humidity5': 'soilMoist1',
-    'Temp6': 'soilTemp2',
-    'Humidity6': 'soilMoist2',
-    'Temp7': 'soilTemp3',
-    'Humidity7': 'soilMoist3',
-    'Temp8': 'soilTemp4',
-    'Humidity8': 'soilMoist4',
-    'RxCheckPercent': 'rxCheckPercent',
-    'BatteryStatus0': 'consBatteryVoltage',
-    'BatteryStatus1': 'txBatteryStatus',
-    'BatteryStatus2': 'inTempBatteryStatus',
-    'BatteryStatus3': 'outTempBatteryStatus',
-    'BatteryStatus4': 'windBatteryStatus',
-    'BatteryStatus5': 'rainBatteryStatus',
-    'BatteryStatus6': 'supplyVoltage',
-    'BatteryStatus7': 'referenceVoltage',
-    'BatteryStatus8': 'heatingVoltage',
+    'inTemp':               'Temp0',
+    'inHumidity':           'Humidity0',
+    'outTemp':              'Temp1',
+    'outHumidity':          'Humidity1',
+    'extraTemp1':           'Temp2',
+    'extraHumid1':          'Humidity2',
+    'extraTemp2':           'Temp3',
+    'extraHumid2':          'Humidity3',
+    'extraTemp3':           'Temp4',
+    'leafWet1':             'Humidity4',
+    'soilTemp1':            'Temp5',
+    'soilMoist1':           'Humidity5',
+    'soilTemp2':            'Temp6',
+    'soilMoist2':           'Humidity6',
+    'soilTemp3':            'Temp7',
+    'soilMoist3':           'Humidity7',
+    'soilTemp4':            'Temp8',
+    'soilMoist4':           'Humidity8',
+    'rxCheckPercent':       'SignalQuality',
+    'consBatteryVoltage':   'BatteryStatus0',
+    'txBatteryStatus':      'BatteryStatus1',
+    'inTempBatteryStatus':  'BatteryStatus2',
+    'outTempBatteryStatus': 'BatteryStatus3',
+    'windBatteryStatus':    'BatteryStatus4',
+    'rainBatteryStatus':    'BatteryStatus5',
+    'supplyVoltage':        'BatteryStatus6',
+    'referenceVoltage':     'BatteryStatus7',
+    'heatingVoltage':       'BatteryStatus8'
 }
 
 # sensor map when using the kl schema
 KL_SENSOR_MAP = {
-    'Temp0': 'temp0',
-    'Humidity0': 'humidity0',
-    'Temp1': 'temp1',
-    'Humidity1': 'humidity1',
-    'Temp2': 'temp2',
-    'Humidity2': 'humidity2',
-    'Temp3': 'temp3',
-    'Humidity3': 'humidity3',
-    'Temp4': 'temp4',
-    'Humidity4': 'humidity4',
-    'Temp5': 'temp5',
-    'Humidity5': 'humidity5',
-    'Temp6': 'temp6',
-    'Humidity6': 'humidity6',
-    'Temp7': 'temp7',
-    'Humidity7': 'humidity7',
-    'Temp8': 'temp8',
-    'Humidity8': 'humidity8',
-    'RxCheckPercent': 'rxCheckPercent',
-    'BatteryStatus0': 'batteryStatus0',
-    'BatteryStatus1': 'batteryStatus1',
-    'BatteryStatus2': 'batteryStatus2',
-    'BatteryStatus3': 'batteryStatus3',
-    'BatteryStatus4': 'batteryStatus4',
-    'BatteryStatus5': 'batteryStatus5',
-    'BatteryStatus6': 'batteryStatus6',
-    'BatteryStatus7': 'batteryStatus7',
-    'BatteryStatus8': 'batteryStatus8',
+    'temp0':          'Temp0',
+    'humidity0':      'Humidity0',
+    'temp1':          'Temp1',
+    'humidity1':      'Humidity1',
+    'temp2':          'Temp2',
+    'humidity2':      'Humidity2',
+    'temp3':          'Temp3',
+    'humidity3':      'Humidity3',
+    'temp4':          'Temp4',
+    'humidity4':      'Humidity4',
+    'temp5':          'Temp5',
+    'humidity5':      'Humidity5',
+    'temp6':          'Temp6',
+    'humidity6':      'Humidity6',
+    'temp7':          'Temp7',
+    'humidity7':      'Humidity7',
+    'temp8':          'Temp8',
+    'humidity8':      'Humidity8',
+    'rxCheckPercent': 'SignalQuality',
+    'batteryStatus0': 'BatteryStatus0',
+    'batteryStatus1': 'BatteryStatus1',
+    'batteryStatus2': 'BatteryStatus2',
+    'batteryStatus3': 'BatteryStatus3',
+    'batteryStatus4': 'BatteryStatus4',
+    'batteryStatus5': 'BatteryStatus5',
+    'batteryStatus6': 'BatteryStatus6',
+    'batteryStatus7': 'BatteryStatus7',
+    'batteryStatus8': 'BatteryStatus8',
 }
 
 
@@ -1444,6 +1444,9 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
 [KlimaLogg]
     # This section is for the TFA KlimaLogg series of weather stations.
 
+    # The driver to use
+    driver = user.kl
+
     # Radio frequency to use between USB transceiver and console: US or EU
     # US uses 915 MHz, EU uses 868.3 MHz.  Default is EU.
     transceiver_frequency = EU
@@ -1475,12 +1478,9 @@ class KlimaLoggConfEditor(weewx.drivers.AbstractConfEditor):
 
     # Or define your own mapping between sensor names and database fields.
     #[[sensor_map]]
-    #    Temp0 = inTemp
-    #    Temp1 = outTemp
-    #    Temp2 = extraTemp2
-
-    # The driver to use
-    driver = user.kl
+    #    inTemp = Temp0
+    #    outTemp = Temp1
+    #    extraTemp2 = Temp2
 
 """
 
@@ -1916,23 +1916,29 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                     rec['usUnits'] = weewx.METRIC
                     rec['dateTime'] = this_ts
                     rec['interval'] = (this_ts - last_ts) / 60
-                    for k in self.SENSOR_KEYS:
-                        if k in self.sensor_map and k in r:
-                            if k.startswith('Temp'):
-                                x = get_datum_diff(r[k],
+                    # calculate the dewpoint and heatindex for each sensor
+                    # FIXME: this belongs in StdWXCalculate
+                    for y in range(0, 9):
+                        if 'Temp%d' % y in r and 'Humidity%d' % y in r:
+                            r['dewpoint%d' % y] = weewx.wxformulas.dewpointC(
+                                r['Temp%s' % y], r['Humidity%d' % y])
+                            r['heatindex%d' % y] = weewx.wxformulas.heatindexC(
+                                r['Temp%s' % y], r['Humidity%d' % y])
+                    # get values requested from the sensor map
+                    for k in self.sensor_map:
+                        label = self.sensor_map[k]
+                        if label in r:
+                            if label.startswith('Temp'):
+                                x = get_datum_diff(r[label],
                                                    SensorLimits.temperature_NP,
                                                    SensorLimits.temperature_OFL)
-                            elif k.startswith('Humidity'):
-                                x = get_datum_diff(r[k],
+                            elif label.startswith('Humidity'):
+                                x = get_datum_diff(r[label],
                                                    SensorLimits.humidity_NP,
                                                    SensorLimits.humidity_OFL)
                             else:
-                                x = r[k]
-                            rec[self.sensor_map[k]] = x
-                    for y in range(0, 9):
-                        if 'temp%d' % y in rec:
-                            rec['dewpoint%d' % y] = weewx.wxformulas.dewpointC(rec['temp%s' % y], rec.get('humidity%d' % y))
-                            rec['heatindex%d' % y] = weewx.wxformulas.heatindexC(rec['temp%s' % y], rec.get('humidity%d' % y))
+                                x = r[label]
+                            rec[k] = x
                     yield rec
                 last_ts = this_ts
             # go for another scan when store_period is greater than max_store_period
@@ -2061,36 +2067,38 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         # add elements required for weewx LOOP packets
         packet = {'usUnits': weewx.METRIC, 'dateTime': ts}
 
+        # calculate dewpoints and heatindices
+        # FIXME: this belongs in StdWXCalculate
+        for y in range(0, 9):
+            if 'Temp%d' % y in data.values and 'Humidity%d' % y in data.values:
+                data.values['dewpoint%d' % y] = weewx.wxformulas.dewpointC(
+                    data.values['Temp%d' % y],
+                    data.values['Humidity%d' % y])
+                data.values['heatindex%d' % y] = weewx.wxformulas.heatindexC(
+                    data.values['Temp%d' % y],
+                    data.values['Humidity%d' % y])
+
         # extract the values from the data object
-        for k in self.SENSOR_KEYS:
-            if k in self.sensor_map and k in data.values:
-                if k.startswith('Temp'):
-                    x = get_datum_diff(data.values[k],
+        for k in self.sensor_map:
+            label = self.sensor_map[k]
+            if label in data.values:
+                if label.startswith('Temp'):
+                    x = get_datum_diff(data.values[label],
                                        SensorLimits.temperature_NP,
                                        SensorLimits.temperature_OFL)
-                elif k.startswith('Humidity'):
-                    x = get_datum_diff(data.values[k],
+                elif label.startswith('Humidity'):
+                    x = get_datum_diff(data.values[label],
                                        SensorLimits.humidity_NP,
                                        SensorLimits.humidity_OFL)
+                elif label == 'BatteryStatus0':
+                    x = 1 if data.values['AlarmData'][1] ^ 0x80 == 0 else 0
+                elif label.startswith('BatteryStatus'):
+                    n = int(label[-1]) - 1
+                    bitmask = 1 << n
+                    x = 1 if data.values['AlarmData'][0] ^ bitmask == 0 else 0
                 else:
-                    x = data.values[k]
-                packet[self.sensor_map[k]] = x
-        # Signal quality
-        if 'RxCheckPercent' in self.sensor_map:
-            packet[self.sensor_map['RxCheckPercent']] = data.values['SignalQuality']
-        # battery low stati
-        if 'BatteryStatus0' in self.sensor_map:
-            packet[self.sensor_map['BatteryStatus0']] = 1 if data.values['AlarmData'][1] ^ 0x80 == 0 else 0
-        bitmask = 1
-        for y in range(1, 9):
-            if 'BatteryStatus%d' % y in self.sensor_map:
-                packet[self.sensor_map['BatteryStatus%d' % y]] = 1 if data.values['AlarmData'][0] ^ bitmask == 0 else 0
-            bitmask <<= 1
-        # dewpoints and heatindexes only for klschema
-        for y in range(0, 9):
-            if 'temp%d' % y in packet:
-                packet['dewpoint%d' % y] = weewx.wxformulas.dewpointC(packet['temp%d' % y], packet.get('humidity%d' % y))
-                packet['heatindex%d' % y] = weewx.wxformulas.heatindexC(packet['temp%d' % y], packet.get('humidity%d' % y))
+                    x = data.values[label]
+                packet[k] = x
 
         return packet
 
