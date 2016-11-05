@@ -52,21 +52,22 @@ take considerably less time.
 
 Pairing
 
-To pair the console with the USB transceiver, press the USB button on the
-console.
+The Klimalogg console must be associated with a USB transceiver in a process
+called 'pairing'.  To pair the console with the USB transceiver, press the USB
+button on the console.
 
 
 Modifications to the weewx configuration file
 
 Installing this extension will make the following changes to weewx.conf:
 
-  Change wx_binding to kl_binding.  Klimalogg works best with its own schema,
-  not the wview schema that is the default for weewx.  This requires changing
-  the data binding from wx_binding to kl_binding in two places, the StdReport
-  and StdArchive sections
+Change wx_binding to kl_binding.  Klimalogg works best with its own schema,
+not the wview schema that is the default for weewx.  This requires changing
+the data binding from wx_binding to kl_binding in two places, the StdReport
+and StdArchive sections
 
-  Remove the [Simulator] driver section if it exists.
+Remove the [Simulator] driver section if it exists.
 
-  Remove the [[StandardReport]] section of [StdReport] if it exists.  The
-  KlimaLogg is not a 'standard' weather station, so the graphs and reports
-  in skin Standard will not work properly.
+Remove the [[StandardReport]] section of [StdReport] if it exists.  The
+KlimaLogg is not a 'standard' weather station, so the graphs and reports
+in skin Standard will not work properly.
