@@ -22,7 +22,7 @@ Installation instructions:
 
 4) Replace the simulator driver with the klimalogg driver
 
-  wee_config --reconfigure --driver=user.kl
+  wee_config --reconfigure --driver=user.kl --no-prompt
 
 5) Restart weewx:
 
@@ -33,7 +33,7 @@ Installation instructions:
 Beware that this installation process will modify weewx.conf:
 
   Change wx_binding to kl_binding.  Klimalogg works best with its own schema,
-  not the wview schema that is the default for weewx.  This requires a change
+  not the wview schema that is the default for weewx.  This requires changing
   the data binding from wx_binding to kl_binding in two places, the StdReport
   and StdArchive sections
 
