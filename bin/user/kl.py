@@ -45,10 +45,10 @@ Historical data are updated less frequently - every 15 minutes in the default
 configuration.
 
 Apparently the station console determines when data will be sent, and, once
-paired (synchronized), the transceiver is always listening.  The station
-console sends a broadcast once a day at midnight*.  If the transceiver
-responds, the station console may continue to broadcast data, depending on the
-transceiver response and the timing of the transceiver response.
+paired, the transceiver is always listening.  The station console sends a
+broadcast once a day at midnight*.  If the transceiver responds, the station
+console may continue to broadcast data, depending on the transceiver response
+and the timing of the transceiver response.
 * when DCF time reception is OFF
 
 The following information was obtained by logging messages from the kl.py
@@ -58,9 +58,9 @@ USBPcap version 1.0.0.7 and Wireshark version win64-1.12.1
 
 Pairing
 
-The transceiver must be paired (synchronized) with a console before it can
-receive data.  Each frame sent by the console includes the device identifier
-of the transceiver with which it is paired (synchronized).
+The transceiver must be paired with a console before it can receive data.
+Each frame sent by the console includes the device identifier of the
+transceiver with which it is paired.
 
 Synchronizing
 
@@ -69,7 +69,8 @@ by one of the following methods:
 
 - Push the USB button on the console
 - Wait until the next day at 00:00 (console clock)
-Note: starting the kl driver automatically initiates synchronisation.
+
+Starting the kl driver automatically initiates synchronisation.
 
 A Current Weather message is received by the transceiver from the
 console. After a setState message is received from the driver,
@@ -1513,7 +1514,7 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
                           action="store_true",
                           help="check USB transceiver")
         parser.add_option("--pair", dest="pair", action="store_true",
-                          help="synchronize the USB transceiver with station console")
+                          help="pair the USB transceiver with station console")
         parser.add_option("--current", dest="current", action="store_true",
                           help="get the current weather conditions")
         parser.add_option("--history", dest="nrecords", type=int, metavar="N",
@@ -1569,7 +1570,7 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
         ntries = 0
         while ntries < maxtries or maxtries == 0:
             if self.station.transceiver_is_paired():
-                print 'Transceiver is paired (synchronized) to console'
+                print 'Transceiver is paired to console'
                 break
             ntries += 1
             msg = 'Press and hold the USB key until "USB" appears'
@@ -1584,7 +1585,7 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
                 time.sleep(5)
                 now = int(time.time())
         else:
-            print 'Transceiver not paired (synchronized) to console.'
+            print 'Transceiver not paired to console.'
 
     def get_interval(self, maxtries):
         cfg = self.get_config(maxtries)
@@ -3890,7 +3891,7 @@ class CommunicationService(object):
         deviceID = self.getDeviceID()
 
         if bufferID == 0xF0F0 or bufferID == 0xFFFF:
-            loginf('generateResponse: console not paired (synchronized), attempting to pair to 0x%04x' % deviceID)
+            loginf('generateResponse: console not paired, attempting to pair to 0x%04x' % deviceID)
             newlen, newbuf = self.buildACKFrame(buf, ACTION_GET_CONFIG, 0xFFFF, 0xFFFF)
         elif bufferID == deviceID:
             self.set_registered_device_id(bufferID, loggerID)  # the station and transceiver are paired now
@@ -4046,7 +4047,7 @@ class CommunicationService(object):
 
     def set_registered_device_id(self, val, logger_id):
         if val != self.registered_device_id:
-            loginf("console is paired (synchronized) to device with ID %04x and logger channel %s" % (val, logger_id+1))
+            loginf("console is paired to device with ID %04x and logger channel %s" % (val, logger_id+1))
         self.registered_device_id = val
 
     def getDeviceRegistered(self):
@@ -4138,8 +4139,8 @@ class CommunicationService(object):
             # wait for genStartupRecords to start
             while self.history_cache.wait_at_start == 1:
                 time.sleep(1)
-            loginf("starting rf communication; press USB button shortly if communication won't start")
-            loginf("To pair (synchronize) and preset a logger channel, press USB button until the unit beeps; then (re)start weewx immediately")
+            loginf("starting rf communication; press momentarily the USB button if communication does not start")
+            loginf("To pair and preset a logger channel, press USB button until the unit beeps; then (re)start weewx immediately")
             while self.running:
                 self.doRFCommunication()
         except Exception, e:
@@ -4211,4 +4212,3 @@ class CommunicationService(object):
         s = self.firstSleep + self.nextSleep * (self.pollCount - 1)
         return 'sleep=%s first=%s next=%s count=%s' % (
             s, self.firstSleep, self.nextSleep, self.pollCount)
-
