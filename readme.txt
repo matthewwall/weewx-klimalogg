@@ -20,7 +20,7 @@ Installation instructions:
 
   sudo /etc/init.d/weewx stop
 
-1b) Move aside any existing weewx database
+1b) Move aside any existing weewx database, if one exists
 
   sudo mv /var/lib/weewx/weewx.sdb /var/lib/weewx/weewx.sdb-old
 
