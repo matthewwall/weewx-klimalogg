@@ -2618,7 +2618,7 @@ class StationConfig(object):
                         sensor_text = sensor_text[0:10]
                     text_ok = True
                     for y in range(0, len(sensor_text)):
-                        if sensor_text[y:y + 1] in Decode.CHARSTR:
+                        if not sensor_text[y:y + 1] in Decode.CHARSTR:
                             text_ok = False
                             loginf('sensor_text%d: "%s" contains bogus'
                                    ' character %s at position %s' %
