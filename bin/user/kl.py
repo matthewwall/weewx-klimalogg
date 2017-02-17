@@ -1200,7 +1200,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.3.0'
+DRIVER_VERSION = '1.3.1'
 
 
 def loader(config_dict, _):
