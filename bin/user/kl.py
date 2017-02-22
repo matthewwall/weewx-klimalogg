@@ -1200,7 +1200,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.3.2'
+DRIVER_VERSION = '1.3.3'
 
 
 def loader(config_dict, _):
@@ -2096,6 +2096,7 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                     n = int(label[-1]) - 1
                     bitmask = 1 << n
                     x = 1 if data.values['AlarmData'][0] ^ bitmask == 0 else 0
+                packet[k] = x
             elif label in data.values:
                 if label.startswith('Temp'):
                     x = get_datum_diff(data.values[label],
