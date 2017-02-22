@@ -1200,7 +1200,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.3.3'
+DRIVER_VERSION = '1.3.4'
 
 
 def loader(config_dict, _):
@@ -2033,15 +2033,15 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         obs_group_dict['heatindex7'] = 'group_temperature'
         obs_group_dict['heatindex8'] = 'group_temperature'
         obs_group_dict['rxCheckPercent'] = 'group_percent'
-        obs_group_dict['batteryStatus0'] = 'group_volt'
-        obs_group_dict['batteryStatus1'] = 'group_volt'
-        obs_group_dict['batteryStatus2'] = 'group_volt'
-        obs_group_dict['batteryStatus3'] = 'group_volt'
-        obs_group_dict['batteryStatus4'] = 'group_volt'
-        obs_group_dict['batteryStatus5'] = 'group_volt'
-        obs_group_dict['batteryStatus6'] = 'group_volt'
-        obs_group_dict['batteryStatus7'] = 'group_volt'
-        obs_group_dict['batteryStatus8'] = 'group_volt'
+        obs_group_dict['batteryStatus0'] = 'group_count'
+        obs_group_dict['batteryStatus1'] = 'group_count'
+        obs_group_dict['batteryStatus2'] = 'group_count'
+        obs_group_dict['batteryStatus3'] = 'group_count'
+        obs_group_dict['batteryStatus4'] = 'group_count'
+        obs_group_dict['batteryStatus5'] = 'group_count'
+        obs_group_dict['batteryStatus6'] = 'group_count'
+        obs_group_dict['batteryStatus7'] = 'group_count'
+        obs_group_dict['batteryStatus8'] = 'group_count'
 
     @staticmethod
     def setup_units_wview_schema():
@@ -2050,11 +2050,11 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         obs_group_dict['soilMoist2'] = 'group_percent'
         obs_group_dict['soilMoist3'] = 'group_percent'
         obs_group_dict['soilMoist4'] = 'group_percent'
-        obs_group_dict['txBatteryStatus'] = 'group_volt'
-        obs_group_dict['inTempBatteryStatus'] = 'group_volt'
-        obs_group_dict['outTempBatteryStatus'] = 'group_volt'
-        obs_group_dict['windBatteryStatus'] = 'group_volt'
-        obs_group_dict['rainBatteryStatus'] = 'group_volt'
+        obs_group_dict['txBatteryStatus'] = 'group_count'
+        obs_group_dict['inTempBatteryStatus'] = 'group_count'
+        obs_group_dict['outTempBatteryStatus'] = 'group_count'
+        obs_group_dict['windBatteryStatus'] = 'group_count'
+        obs_group_dict['rainBatteryStatus'] = 'group_count'
 
     SENSOR_KEYS = ['Temp0', 'Humidity0',
                    'Temp1', 'Humidity1',

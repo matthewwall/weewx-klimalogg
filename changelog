@@ -1,3 +1,6 @@
+1.3.4 22feb2017
+* use group_count rather than group_volt for battery status
+
 1.3.3 22feb2017
 * set battery status in packet
 
