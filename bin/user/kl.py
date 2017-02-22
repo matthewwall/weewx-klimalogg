@@ -1200,7 +1200,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.3.1'
+DRIVER_VERSION = '1.3.2'
 
 
 def loader(config_dict, _):
@@ -2089,7 +2089,14 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
         # extract the values from the data object
         for k in self.sensor_map:
             label = self.sensor_map[k]
-            if label in data.values:
+            if label.startswith('BatteryStatus') and 'AlarmData' in data.values:
+                if label == 'BatteryStatus0':
+                    x = 1 if data.values['AlarmData'][1] ^ 0x80 == 0 else 0
+                else:
+                    n = int(label[-1]) - 1
+                    bitmask = 1 << n
+                    x = 1 if data.values['AlarmData'][0] ^ bitmask == 0 else 0
+            elif label in data.values:
                 if label.startswith('Temp'):
                     x = get_datum_diff(data.values[label],
                                        SensorLimits.temperature_NP,
@@ -2098,12 +2105,6 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
                     x = get_datum_diff(data.values[label],
                                        SensorLimits.humidity_NP,
                                        SensorLimits.humidity_OFL)
-                elif label == 'BatteryStatus0':
-                    x = 1 if data.values['AlarmData'][1] ^ 0x80 == 0 else 0
-                elif label.startswith('BatteryStatus'):
-                    n = int(label[-1]) - 1
-                    bitmask = 1 << n
-                    x = 1 if data.values['AlarmData'][0] ^ bitmask == 0 else 0
                 else:
                     x = data.values[label]
                 packet[k] = x
