@@ -1200,7 +1200,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.3.5'
+DRIVER_VERSION = '1.3.6'
 
 
 def loader(config_dict, _):
@@ -1524,7 +1524,7 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
         parser.add_option("--history-since", dest="recmin",
                           type=int, metavar="N",
                           help="display history records since N minutes ago")
-        parser.add_option("--maxtries", dest="maxtries", type=int,
+        parser.add_option("--maxtries", dest="maxtries", type=int, default=3,
                           help="maximum number of retries, 0 indicates no max")
 
     def do_options(self, options, parser, config_dict, prompt):
@@ -1534,8 +1534,6 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
             self.check_transceiver(maxtries)
         elif options.pair:
             self.pair(maxtries)
-        elif options.interval is not None:
-            self.set_interval(maxtries, options.interval, prompt)
         elif options.current:
             self.show_current(maxtries)
         elif options.nrecords is not None:
@@ -1589,12 +1587,6 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
         else:
             print 'Transceiver not paired to console.'
 
-    def get_interval(self, maxtries):
-        cfg = self.get_config(maxtries)
-        if cfg is None:
-            return None
-        return history_intervals.get(cfg['history_interval'])
-
     def get_config(self, maxtries):
         start_ts = None
         ntries = 0
@@ -1610,11 +1602,6 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
                 print 'No data after %d seconds (%s)' % (dur, PRESS_USB)
             time.sleep(30)
         return None
-
-    @staticmethod
-    def set_interval(maxtries, interval, prompt):
-        """Set the station archive interval"""
-        print 'This feature is not yet implemented'
 
     def show_info(self, maxtries):
         """Query the station then display the settings."""
@@ -2146,10 +2133,6 @@ class KlimaLoggDriver(weewx.drivers.AbstractDevice):
 
     def clear_wait_at_start(self):
         self._service.clearWaitAtStart()
-
-    def set_interval(self, interval):
-        # FIXME: set the archive interval
-        pass
 
 # The following classes and methods are adapted from the implementation by
 # eddie de pieri, which is in turn based on the HeavyWeather implementation.
