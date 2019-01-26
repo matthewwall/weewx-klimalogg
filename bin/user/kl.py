@@ -1200,7 +1200,7 @@ import weeutil.weeutil
 from weewx.units import obs_group_dict
 
 DRIVER_NAME = 'KlimaLogg'
-DRIVER_VERSION = '1.3.6'
+DRIVER_VERSION = '1.3.7'
 
 
 def loader(config_dict, _):
@@ -1615,6 +1615,7 @@ class KlimaLoggConfigurator(weewx.drivers.AbstractConfigurator):
         print 'Querying the station for current weather data...'
         start_ts = None
         ntries = 0
+        self.station.clear_wait_at_start() # let rf communication start
         while ntries < maxtries or maxtries == 0:
             packet = self.station.get_observation()
             if packet is not None:
@@ -4128,7 +4129,7 @@ class CommunicationService(object):
         try:
             logdbg('setting up rf communication')
             self.doRFSetup()
-            # wait for genStartupRecords to start
+            # wait for genStartupRecords or show_current to start
             while self.history_cache.wait_at_start == 1:
                 time.sleep(1)
             loginf("starting rf communication")
