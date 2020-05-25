@@ -1,7 +1,7 @@
 # installer for klimalogg
 # Copyright 2015 Luc Heijst
 
-from setup import ExtensionInstaller
+from weecfg.extension import ExtensionInstaller
 
 def loader():
     return KlimaLoggInstaller()
